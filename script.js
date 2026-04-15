@@ -47,12 +47,27 @@ window.loadAdminAttendance = () => {
     const tb = document.getElementById('adminAttendanceList');
     if(!tb || !cls) return;
     
-    // Filter by class and sort alphabetically
     const studentsInClass = (currentData.students || [])
         .filter(s => s.class === cls)
         .sort((a, b) => a.name.localeCompare(b.name));
 
-    tb.innerHTML = studentsInClass.map(s => `<tr><td>${s.name}</td><td><select class="att-sel" data-email="${s.email}"><option value="P">P</option><option value="A">A</option></select></td></tr>`).join('');
+    tb.innerHTML = studentsInClass.map(s => `
+        <tr>
+            <td>${s.name}</td>
+            <td>
+                <div class="att-btn-group" data-email="${s.email}">
+                    <button class="att-btn present-btn" onclick="window.toggleAttendance(this, 'P')">P</button>
+                    <button class="att-btn absent-btn" onclick="window.toggleAttendance(this, 'A')">A</button>
+                </div>
+            </td>
+        </tr>`).join('');
+};
+
+window.toggleAttendance = (btn, status) => {
+    const group = btn.parentElement;
+    group.querySelectorAll('.att-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    group.dataset.status = status;
 };
 
 window.saveAttendance = () => {
@@ -63,19 +78,17 @@ window.saveAttendance = () => {
     if(!topic) { alert("Please enter Topic Name!"); return; }
 
     const statusData = {}; 
-    document.querySelectorAll('.att-sel').forEach(s => statusData[s.dataset.email] = s.value);
-    
-    if(!currentData.attendanceRecords) currentData.attendanceRecords = [];
-    
-    currentData.attendanceRecords.push({
-        date: date,
-        class: cls,
-        topic: topic,
-        data: statusData
+    document.querySelectorAll('.att-btn-group').forEach(group => {
+        const email = group.dataset.email;
+        const status = group.dataset.status || 'A'; // Default to 'A' if not clicked
+        statusData[email] = status;
     });
     
+    if(!currentData.attendanceRecords) currentData.attendanceRecords = [];
+    currentData.attendanceRecords.push({ date, class: cls, topic, data: statusData });
+    
     saveToCloud().then(() => {
-        alert("Attendance for Topic: " + topic + " Saved Successfully!");
+        alert("Attendance Saved! (Auto-Absent applied to unmarked students)");
         document.getElementById('attTopicName').value = "";
     });
 };
@@ -289,7 +302,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('logoutBtn')?.addEventListener('click', () => { localStorage.clear(); window.location.href = 'login.html'; });
 });
 
-// Globals for HTML onclick
+
 window.togglePasswordVisibility = (id, icon) => {
     const i = document.getElementById(id);
     if(i) {

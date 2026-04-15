@@ -553,3 +553,32 @@ input:invalid:not(:placeholder-shown) {
 .toggle-password:hover {
     color: var(--primary);
 }
+
+/* Attendance Buttons */
+.att-btn-group {
+    display: flex;
+    gap: 10px;
+}
+.att-btn {
+    padding: 8px 20px;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    background: white;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+    flex: 1;
+}
+.att-btn.present-btn.selected {
+    background: #22c55e;
+    color: white;
+    border-color: #166534;
+}
+.att-btn.absent-btn.selected {
+    background: #ef4444;
+    color: white;
+    border-color: #991b1b;
+}
+.att-btn:hover:not(.selected) {
+    background: #f1f5f9;
+}
