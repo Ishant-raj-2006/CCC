@@ -25,7 +25,16 @@ let currentData = {
     attendanceRecords: []
 };
 
-const saveToCloud = () => set(ref(db, 'ccc_master_data'), currentData);
+const saveToCloud = () => {
+    console.log("Attempting to save data to Firebase...", currentData);
+    return set(ref(db, 'ccc_master_data'), currentData)
+        .then(() => console.log("Data saved successfully!"))
+        .catch(err => {
+            console.error("Firebase Save Error:", err);
+            alert("UPLOAD FAILED!\nError: " + err.message + "\n\nPlease check if your Firebase Rules are set to public (read: true, write: true) in the Firebase Console.");
+            throw err;
+        });
+};
 
 // Admin Global Functions
 window.loadAdminStudents = () => {
@@ -71,26 +80,57 @@ window.toggleAttendance = (btn, status) => {
 };
 
 window.saveAttendance = () => {
-    const cls = document.getElementById('attClassSelect').value;
-    const topic = document.getElementById('attTopicName').value;
+    const classEl = document.getElementById('attClassSelect');
+    const topicEl = document.getElementById('attTopicName');
+    
+    if(!classEl || !topicEl) {
+        alert("System Error: Attendance fields not found in UI.");
+        return;
+    }
+
+    const cls = classEl.value;
+    const topic = topicEl.value.trim();
     const date = new Date().toLocaleDateString();
     
-    if(!topic) { alert("Please enter Topic Name!"); return; }
+    if(!topic) { 
+        alert("Please enter a Topic Name first!"); 
+        topicEl.focus();
+        return; 
+    }
 
     const statusData = {}; 
-    document.querySelectorAll('.att-btn-group').forEach(group => {
+    const groups = document.querySelectorAll('.att-btn-group');
+    
+    if(groups.length === 0) {
+        alert("Error: No students found in this class to mark attendance!");
+        return;
+    }
+
+    groups.forEach(group => {
         const email = group.dataset.email;
-        const status = group.dataset.status || 'A'; // Default to 'A' if not clicked
+        const status = group.dataset.status || 'A'; // Auto-Absent
         statusData[email] = status;
     });
     
     if(!currentData.attendanceRecords) currentData.attendanceRecords = [];
     currentData.attendanceRecords.push({ date, class: cls, topic, data: statusData });
     
-    saveToCloud().then(() => {
-        alert("Attendance Saved! (Auto-Absent applied to unmarked students)");
-        document.getElementById('attTopicName').value = "";
-    });
+    // Disable button to prevent double clicks
+    const btn = event.currentTarget;
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+    saveToCloud()
+        .then(() => {
+            alert("SUCCESS! Attendance for " + cls + "th (" + topic + ") has been saved.");
+            topicEl.value = "";
+            window.loadAdminAttendance(); // Refresh list
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        });
 };
 
 window.loadAdminTimetable = () => {
