@@ -27,11 +27,21 @@ let currentData = {
 
 const saveToCloud = () => {
     console.log("Attempting to save data to Firebase...", currentData);
-    return set(ref(db, 'ccc_master_data'), currentData)
-        .then(() => console.log("Data saved successfully!"))
+    
+    // Create a timeout promise
+    const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("Connection Timeout: Database is taking too long to respond. Please check your internet or Firebase console.")), 15000);
+    });
+
+    const savePromise = set(ref(db, 'ccc_master_data'), currentData);
+
+    return Promise.race([savePromise, timeoutPromise])
+        .then(() => {
+            console.log("Data saved successfully!");
+        })
         .catch(err => {
             console.error("Firebase Save Error:", err);
-            alert("UPLOAD FAILED!\nError: " + err.message + "\n\nPlease check if your Firebase Rules are set to public (read: true, write: true) in the Firebase Console.");
+            alert("UPLOAD FAILED!\n" + err.message + "\n\nTip: Make sure you are ONLINE and have clicked 'Publish' on your Firebase Rules.");
             throw err;
         });
 };
