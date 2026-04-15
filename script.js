@@ -1,11 +1,26 @@
-// Champaran Coaching Center - Unified Project Script
+// Champaran Coaching Center - Firebase Sync Full Version
+const firebaseConfig = {
+  apiKey: "AIzaSyCTkM0HrrIOb3D1IOp5nLOh7unRLwu1nxw",
+  authDomain: "champaran-choching-center.firebaseapp.com",
+  projectId: "champaran-choching-center",
+  storageBucket: "champaran-choching-center.firebasestorage.app",
+  messagingSenderId: "473187056929",
+  appId: "1:473187056929:web:c62bdc65d3038a93141260",
+  measurementId: "G-SXM6HBBWEX"
+};
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
 document.addEventListener('DOMContentLoaded', () => {
     const isLoginPage = window.location.pathname.includes('login.html') || window.location.pathname.includes('admin-login.html');
     const isAdminPage = window.location.pathname.includes('admin.html');
     const isLoggedIn = localStorage.getItem('isLoggedIn');
     const isAdmin = localStorage.getItem('isAdmin');
 
-    // Security
     if (isAdminPage && (!isLoggedIn || !isAdmin)) {
         window.location.href = 'admin-login.html';
         return;
@@ -15,204 +30,167 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // Data Init
-    if (!localStorage.getItem('ccc_master_data')) {
-        const initialData = {
+    // Load Realtime Data
+    onValue(ref(db, 'ccc_master_data'), (snapshot) => {
+        const masterData = snapshot.val() || {
             students: [],
             timetable: { "8": "TBA", "9": "TBA", "10": "TBA", "11": "TBA", "12": "TBA" },
             notes: [],
             ranks: { "8": [], "9": [], "10": [], "11": [], "12": [] },
-            attendance: {} 
+            attendance: {}
         };
-        localStorage.setItem('ccc_master_data', JSON.stringify(initialData));
-    }
-    const masterData = JSON.parse(localStorage.getItem('ccc_master_data'));
 
-    function saveMasterData() {
-        localStorage.setItem('ccc_master_data', JSON.stringify(masterData));
-    }
+        if (isLoginPage) handleLoginPage(masterData);
+        else if (isAdminPage) handleAdminPage(masterData);
+        else handleStudentDashboard(masterData);
+    });
 
-    // Role Routing
-    if (isLoginPage) handleLoginPage();
-    else if (isAdminPage) handleAdminPage();
-    else handleStudentDashboard();
+    const saveToCloud = (data) => set(ref(db, 'ccc_master_data'), data);
 
-    // --- STUDENT LOGIN ---
-    function handleLoginPage() {
-        const loginForm = document.getElementById('loginForm');
-        loginForm?.addEventListener('submit', (e) => {
+    function handleLoginPage(masterData) {
+        document.getElementById('loginForm')?.addEventListener('submit', (e) => {
             e.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const btn = e.target.querySelector('button');
-            btn.innerHTML = 'Authenticating...';
+            const email = document.getElementById('email').value.trim().toLowerCase();
+            const pass = document.getElementById('password').value;
+            const user = (masterData.students || []).find(s => s.email.toLowerCase() === email && s.phone === pass);
             
-            setTimeout(() => {
-                // Match email AND phone number (used as password)
-                const user = masterData.students.find(s => s.email === email && s.phone === password);
-                
-                if (user) {
-                    localStorage.setItem('isLoggedIn', 'true');
-                    localStorage.setItem('userEmail', email);
-                    localStorage.setItem('userName', user.name);
-                    localStorage.setItem('userClass', user.class);
-                    localStorage.setItem('isAdmin', 'false');
-                    window.location.href = 'index.html';
-                } else {
-                    alert("Invalid Email or Password (Phone Number)! Please check with Sadam Sir.");
-                    btn.innerHTML = 'Login to Dashboard';
-                }
-            }, 800);
+            if (user) {
+                localStorage.setItem('isLoggedIn', 'true');
+                localStorage.setItem('userEmail', email);
+                localStorage.setItem('userName', user.name);
+                localStorage.setItem('userClass', user.class);
+                localStorage.setItem('isAdmin', 'false');
+                window.location.href = 'index.html';
+            } else {
+                alert("Invalid Login!");
+            }
         });
     }
 
-    // --- STUDENT PANEL ---
-    function handleStudentDashboard() {
-        const userClass = localStorage.getItem('userClass');
-        const userEmail = localStorage.getItem('userEmail');
-        if (!userClass) return;
-
+    function handleStudentDashboard(masterData) {
+        const uClass = localStorage.getItem('userClass');
+        const uEmail = localStorage.getItem('userEmail');
         document.getElementById('displayUsername').textContent = localStorage.getItem('userName');
-        document.getElementById('displayHandle').textContent = `Class ${userClass}th | ${userEmail}`;
+        document.getElementById('displayHandle').textContent = `Class ${uClass}th | ${uEmail}`;
 
-        // Timetable
-        const tt = document.getElementById('studentTimetable');
-        if(tt) tt.innerHTML = `<div class="time-card grade-${userClass}"><div class="class-title">Class ${userClass}th</div><div class="class-time">${masterData.timetable[userClass]}</div></div>`;
+        if(document.getElementById('studentTimetable')) 
+            document.getElementById('studentTimetable').innerHTML = `<div class="time-card grade-${uClass}"><div class="class-title">Class ${uClass}th</div><div class="class-time">${masterData.timetable[uClass]}</div></div>`;
 
-        // Attendance
-        const att = document.getElementById('studentAttendanceBody');
-        if(att) {
-            att.innerHTML = "";
-            Object.keys(masterData.attendance).forEach(date => {
-                if(masterData.attendance[date][userEmail]) {
-                    const status = masterData.attendance[date][userEmail];
-                    att.innerHTML += `<tr><td>${date}</td><td><span class="status-pill ${status==='P'?'present':'absent'}">${status}</span></td><td>Regular Session</td></tr>`;
+        const attBody = document.getElementById('studentAttendanceBody');
+        if(attBody) {
+            attBody.innerHTML = "";
+            Object.keys(masterData.attendance || {}).forEach(date => {
+                const day = masterData.attendance[date];
+                if(day && day[uEmail]) {
+                    const status = day[uEmail];
+                    attBody.innerHTML += `<tr><td>${date}</td><td><span class="status-pill ${status==='P'?'present':'absent'}">${status}</span></td><td>Regular Session</td></tr>`;
                 }
             });
         }
 
-        // Fee
-        const fee = document.getElementById('studentFeeBody');
-        const s = masterData.students.find(x => x.email === userEmail);
-        if(fee && s) fee.innerHTML = `<tr><td>Paid</td><td>₹${s.fee.paid}</td></tr><tr><td>Due</td><td style="color:red">₹${s.fee.due}</td></tr>`;
+        const s = (masterData.students || []).find(x => x.email.toLowerCase() === uEmail);
+        if(document.getElementById('studentFeeBody') && s) 
+            document.getElementById('studentFeeBody').innerHTML = `<tr><td>Paid</td><td>₹${s.fee.paid}</td></tr><tr><td>Due</td><td style="color:red">₹${s.fee.due}</td></tr>`;
 
-        // Ranks
+        const nList = document.getElementById('studentNotesList');
+        if(nList) {
+            nList.innerHTML = "";
+            (masterData.notes || []).filter(n => n.class === uClass).forEach(n => {
+                nList.innerHTML += `<div class="note-item"><span>${n.title}</span><a href="#" class="download-link" onclick="downloadNoteFile('${n.title}')"><i class="fas fa-download"></i></a></div>`;
+            });
+        }
+        
         const rnk = document.getElementById('studentRankings');
-        const label = document.getElementById('rankClassLabel');
-        if(label) label.textContent = `Class ${userClass}th`;
-        if(rnk) {
-            const data = masterData.ranks[userClass] || [];
+        if(rnk && masterData.ranks[uClass]) {
+            const data = masterData.ranks[uClass];
             if(data.length > 0) {
                 rnk.innerHTML = `<div class="ranking-card">${data.map((r,i)=>`<div class="rank-item"><div class="rank-num">${i+1}</div><div class="rank-details"><div class="rank-name">${r.name}</div><div class="rank-points">${r.score} marks</div></div></div>`).join('')}</div>`;
             }
         }
-
-        // Notes
-        const nts = document.getElementById('studentNotesList');
-        if(nts) {
-            const list = masterData.notes.filter(n => n.class === userClass);
-            list.forEach(n => {
-                nts.innerHTML += `<div class="note-item"><span>${n.title}</span><a href="#" class="download-link" onclick="downloadNoteFile('${n.title}')"><i class="fas fa-download"></i></a></div>`;
-            });
-        }
     }
 
-    // --- ADMIN PANEL ---
-    function handleAdminPage() {
+    function handleAdminPage(masterData) {
         window.loadAdminStudents = () => {
             const tb = document.getElementById('adminStudentList');
-            if(!tb) return;
-            tb.innerHTML = masterData.students.map(s => `<tr><td>${s.name}</td><td>${s.class}th</td><td>${s.phone}</td><td>P:₹${s.fee.paid}<br>D:₹${s.fee.due}</td><td><button onclick="openFeeModal('${s.email}','${s.name}')" class="btn btn-outline">Edit Fee</button></td></tr>`).join('');
+            if(tb) tb.innerHTML = (masterData.students || []).map(s => `<tr><td>${s.name}</td><td>${s.class}th</td><td>${s.phone}</td><td>P:₹${s.fee.paid}<br>D:₹${s.fee.due}</td><td><button onclick="openFeeModal('${s.email}','${s.name}')" class="btn btn-outline">Edit Fee</button></td></tr>`).join('');
         };
 
         window.addNewStudent = () => {
-            const n = prompt("Name:"), c = prompt("Class (8-12):"), e = prompt("Email:"), p = prompt("Phone:");
+            const n = prompt("Name:"), c = prompt("Class:"), e = prompt("Email:"), p = prompt("Phone:");
             if(n && c && e && p) {
-                masterData.students.push({ name:n, class:c, email:e, phone:p, fee:{paid:0, due:1500} });
-                saveMasterData(); loadAdminStudents(); alert("Added!");
+                if(!masterData.students) masterData.students = [];
+                masterData.students.push({ name:n, class:c, email:e.toLowerCase(), phone:p, fee:{paid:0, due:1500} });
+                saveToCloud(masterData); alert("Student Added!");
             }
-        };
-
-        window.loadAdminAttendance = () => {
-            const tb = document.getElementById('adminAttendanceList');
-            if(!tb) return;
-            tb.innerHTML = masterData.students.map(s => `<tr><td>${s.name}</td><td>${s.class}th</td><td><select class="att-sel" data-email="${s.email}"><option value="P">P</option><option value="A">A</option></select></td></tr>`).join('');
         };
 
         window.saveAttendance = () => {
             const date = new Date().toLocaleDateString();
             const day = {}; document.querySelectorAll('.att-sel').forEach(s => day[s.dataset.email] = s.value);
-            masterData.attendance[date] = day; saveMasterData(); alert("Saved!");
+            if(!masterData.attendance) masterData.attendance = {};
+            masterData.attendance[date] = day; saveToCloud(masterData); alert("Attendance Saved!");
         };
 
-        window.loadAdminTimetable = () => {
-            const c = document.getElementById('adminTimetableList');
-            if(!c) return;
-            c.innerHTML = Object.keys(masterData.timetable).map(cls => `<div class="form-group"><label>Class ${cls}th</label><input type="text" class="tt-in" data-class="${cls}" value="${masterData.timetable[cls]}"></div>`).join('');
-        };
         window.saveTimetable = () => {
             document.querySelectorAll('.tt-in').forEach(i => masterData.timetable[i.dataset.class] = i.value);
-            saveMasterData(); alert("Updated!");
+            saveToCloud(masterData); alert("Timetable Updated!");
         };
 
-        window.loadRanksForClass = () => {
-            const cls = document.getElementById('rankClassSelect').value;
-            const c = document.getElementById('rankInputs');
-            if(!c) return;
-            const cur = masterData.ranks[cls] || [];
-            c.innerHTML = [1,2,3].map(i => `<div style="display:flex;gap:5px;margin-bottom:5px"><input type="text" class="rn-n" placeholder="Name" value="${cur[i-1]?.name||''}" style="flex:2"><input type="number" class="rn-s" placeholder="Marks" value="${cur[i-1]?.score||''}" style="flex:1"></div>`).join('');
-        };
         window.saveRanks = () => {
             const cls = document.getElementById('rankClassSelect').value;
             const r = []; document.querySelectorAll('.rn-n').forEach((n,i) => { if(n.value) r.push({name:n.value, score:document.querySelectorAll('.rn-s')[i].value}) });
-            masterData.ranks[cls] = r; saveMasterData(); alert("Ranks Saved!");
+            masterData.ranks[cls] = r; saveToCloud(masterData); alert("Ranks Saved!");
         };
 
-        document.getElementById('uploadNoteForm')?.addEventListener('submit', (e)=>{
-            e.preventDefault();
-            const t = document.getElementById('noteTitle').value, c = document.getElementById('noteClass').value;
-            masterData.notes.push({title:t, class:c}); saveMasterData(); alert("Uploaded!"); e.target.reset();
-        });
+        const noteForm = document.getElementById('uploadNoteForm');
+        if(noteForm && !noteForm.hasListener) {
+            noteForm.addEventListener('submit', (e)=>{
+                e.preventDefault();
+                if(!masterData.notes) masterData.notes = [];
+                masterData.notes.push({title:document.getElementById('noteTitle').value, class:document.getElementById('noteClass').value});
+                saveToCloud(masterData); alert("Note Added!"); e.target.reset();
+            });
+            noteForm.hasListener = true;
+        }
 
         let editEmail = "";
         window.openFeeModal = (email, name) => {
             editEmail = email; const s = masterData.students.find(x => x.email === email);
-            document.getElementById('feeStudentName').textContent = name;
-            document.getElementById('feePaidInput').value = s.fee.paid;
-            document.getElementById('feeDueInput').value = s.fee.due;
-            document.getElementById('feeModal').style.display = 'flex';
+            if(s) {
+                document.getElementById('feeStudentName').textContent = name;
+                document.getElementById('feePaidInput').value = s.fee.paid;
+                document.getElementById('feeDueInput').value = s.fee.due;
+                document.getElementById('feeModal').style.display = 'flex';
+            }
         };
-        window.closeFeeModal = () => document.getElementById('feeModal').style.display = 'none';
         window.confirmFeeUpdate = () => {
             const s = masterData.students.find(x => x.email === editEmail);
-            s.fee.paid = document.getElementById('feePaidInput').value;
-            s.fee.due = document.getElementById('feeDueInput').value;
-            saveMasterData(); closeFeeModal(); loadAdminStudents(); alert("Fee Updated!");
+            if(s) {
+                s.fee.paid = document.getElementById('feePaidInput').value;
+                s.fee.due = document.getElementById('feeDueInput').value;
+                saveToCloud(masterData); document.getElementById('feeModal').style.display = 'none'; alert("Fee Updated!");
+            }
         };
 
-        loadAdminStudents(); loadAdminAttendance(); loadAdminTimetable(); loadRanksForClass();
+        window.loadAdminStudents();
+        if(document.getElementById('adminAttendanceList')) document.getElementById('adminAttendanceList').innerHTML = (masterData.students || []).map(s => `<tr><td>${s.name}</td><td>${s.class}th</td><td><select class="att-sel" data-email="${s.email}"><option value="P">P</option><option value="A">A</option></select></td></tr>`).join('');
+        if(document.getElementById('adminTimetableList')) document.getElementById('adminTimetableList').innerHTML = Object.keys(masterData.timetable).map(cls => `<div class="form-group"><label>Class ${cls}th</label><input type="text" class="tt-in" data-class="${cls}" value="${masterData.timetable[cls]}"></div>`).join('');
     }
 
-    document.getElementById('logoutBtn')?.addEventListener('click', () => { localStorage.removeItem('isLoggedIn'); window.location.href = 'login.html'; });
+    document.getElementById('logoutBtn')?.addEventListener('click', () => { localStorage.clear(); window.location.href = 'login.html'; });
 });
 
-// Helper: Toggle Password Visibility
-function togglePasswordVisibility(inputId, icon) {
-    const input = document.getElementById(inputId);
-    if (input.type === "password") {
-        input.type = "text";
-        icon.classList.remove('fa-eye');
-        icon.classList.add('fa-eye-slash');
-    } else {
-        input.type = "password";
-        icon.classList.remove('fa-eye-slash');
-        icon.classList.add('fa-eye');
+// Globals for HTML onclick
+window.togglePasswordVisibility = (id, icon) => {
+    const i = document.getElementById(id);
+    if(i) {
+        i.type = i.type === "password" ? "text" : "password";
+        icon.classList.toggle('fa-eye'); icon.classList.toggle('fa-eye-slash');
     }
-}
-
-function downloadNoteFile(name) {
-    const blob = new Blob([`Study Material: ${name}\n\nChamparan Coaching Center.\nBy Sadam Sir.`], { type: 'text/plain' });
-    const url = window.URL.createObjectURL(blob); const a = document.createElement('a');
-    a.href = url; a.download = `${name.replace(/\s+/g,'_')}.txt`;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-}
+};
+window.downloadNoteFile = (name) => {
+    const blob = new Blob([`Material: ${name}\nCCC Coaching`], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `${name}.txt`;
+    a.click();
+};
