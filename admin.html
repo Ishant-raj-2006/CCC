@@ -79,7 +79,7 @@
                 <li onclick="showSection('timetableSection')"><i class="fas fa-calendar-alt"></i> Time Table</li>
                 <li onclick="showSection('ranksSection')"><i class="fas fa-trophy"></i> Test Ranks</li>
                 <li onclick="showSection('attendanceSection')"><i class="fas fa-check-double"></i> Mark Attendance</li>
-                <li onclick="window.location.href='login.html'"><i class="fas fa-sign-out-alt"></i> Logout</li>
+                <li onclick="localStorage.clear(); window.location.href='login.html'"><i class="fas fa-sign-out-alt"></i> Logout</li>
             </ul>
         </aside>
 
@@ -162,7 +162,7 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label>Class</label>
-                            <select id="rankClassSelect" onchange="loadRanksForClass()">
+                            <select id="rankClassSelect" onchange="window.loadRanksForClass()">
                                 <option value="8">Class 8th</option>
                                 <option value="9">Class 9th</option>
                                 <option value="10">Class 10th</option>
@@ -226,25 +226,29 @@
     </div>
 
     <script type="module" src="script.js"></script>
-    <script>
+    <script type="module">
         // Admin specific UI logic
-        function showSection(sectionId) {
+        window.showSection = function(sectionId) {
             document.querySelectorAll('.admin-content-section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.admin-nav li').forEach(l => l.classList.remove('active'));
             
             document.getElementById(sectionId).classList.add('active');
-            event.currentTarget.classList.add('active');
+            if(event) event.currentTarget.classList.add('active');
             
             // Re-load data if needed
-            if (sectionId === 'studentsSection') loadAdminStudents();
-            if (sectionId === 'attendanceSection') loadAdminAttendance();
-            if (sectionId === 'timetableSection') loadAdminTimetable();
-            if (sectionId === 'ranksSection') loadRanksForClass();
-        }
+            if (sectionId === 'studentsSection') window.loadAdminStudents();
+            if (sectionId === 'attendanceSection') window.loadAdminAttendance();
+            if (sectionId === 'timetableSection') window.loadAdminTimetable();
+            if (sectionId === 'ranksSection') window.loadRanksForClass();
+        };
 
-        // Add this to your logic
+        // Initialize display
         document.getElementById('currentDateDisplay').textContent = new Date().toLocaleDateString();
-        loadAdminStudents();
+        
+        // Initial load (wait a bit for Firebase if needed, but onValue will handle it)
+        setTimeout(() => {
+            if(window.loadAdminStudents) window.loadAdminStudents();
+        }, 500);
     </script>
 </body>
 </html>
