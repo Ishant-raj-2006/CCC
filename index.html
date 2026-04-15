@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Champaran Coaching Center | Student Dashboard</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="logo-section">
+                <img src="coaching_center_logo_1775973304457.png" alt="CCC Logo">
+                <div>
+                    <h1>Champaran Coaching Center</h1>
+                    <p>Sadam Sir's Institute of Excellence</p>
+                </div>
+            </div>
+            <div class="header-meta">
+                <span><i class="fas fa-calendar-alt"></i> Academic Session 2024-25</span>
+            </div>
+        </header>
+
+        <!-- Sidebar / About -->
+        <aside class="sidebar">
+            <div class="card profile-card">
+                <div class="card-title">
+                    <i class="fas fa-user-circle"></i> Profile Info
+                </div>
+                <div class="profile-img-container">
+                    <img src="student_profile_placeholder_1775973326014.png" alt="User Photo">
+                </div>
+                <h2 class="username" id="displayUsername">Himanshu Kumar</h2>
+                <p class="student-handle" id="displayHandle">Class 10th Student</p>
+                
+                <div class="profile-actions">
+                    <button class="btn btn-primary" id="editProfileBtn"><i class="fas fa-edit"></i> Edit Profile</button>
+                    <button class="btn btn-outline" id="addEmailBtn"><i class="fas fa-envelope"></i> Update Email</button>
+                    <button class="btn btn-outline" id="changePhotoBtn"><i class="fas fa-camera"></i> Change Photo</button>
+                    <input type="file" id="photoInput" style="display: none;" accept="image/*">
+                    <button class="btn btn-danger" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">
+                    <i class="fas fa-book-open"></i> Study Notes
+                </div>
+                <div class="notes-list" id="studentNotesList">
+                    <!-- Dynamic Notes -->
+                    <div class="note-item">
+                        <span>General Instructions</span>
+                        <a href="#" class="download-link"><i class="fas fa-download"></i> Download</a>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Center -->
+        <main class="main-center">
+            <div class="card">
+                <div class="card-title">
+                    <i class="fas fa-clock"></i> Class Time Table
+                </div>
+                <div class="timetable-container" id="studentTimetable">
+                    <!-- Dynamic Timetable -->
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 24px;">
+                <div class="card-title">
+                    <i class="fas fa-trophy"></i> Test Rankings (<span id="rankClassLabel"></span>)
+                </div>
+                <div class="rankings-grid" id="studentRankings">
+                    <!-- Dynamic Rankings -->
+                    <p style="color: var(--text-muted); padding: 20px;">No rankings available for your class yet.</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- Main Right -->
+        <aside class="main-right">
+            <div class="card">
+                <div class="card-title">
+                    <i class="fas fa-calendar-check"></i> Your Attendance
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Topic</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentAttendanceBody">
+                            <!-- Dynamic Attendance -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 24px;">
+                <div class="card-title">
+                    <i class="fas fa-wallet"></i> Your Fee Status
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Detail</th>
+                                <th>Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentFeeBody">
+                            <!-- Dynamic Fee -->
+                            <tr>
+                                <td>Monthly Fee</td>
+                                <td style="color: var(--accent); font-weight: 600;">₹0</td>
+                            </tr>
+                            <tr>
+                                <td>Due Amount</td>
+                                <td style="color: var(--danger); font-weight: 700;">₹0</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

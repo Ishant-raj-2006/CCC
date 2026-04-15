@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Admin | Champaran Coaching Center</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .admin-sidebar {
+            background: var(--secondary);
+            color: white;
+            padding: 30px;
+            border-radius: 24px;
+            height: fit-content;
+        }
+        .admin-nav {
+            list-style: none;
+            margin-top: 30px;
+        }
+        .admin-nav li {
+            padding: 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .admin-nav li:hover, .admin-nav li.active {
+            background: var(--primary);
+        }
+        .admin-content-section {
+            display: none;
+        }
+        .admin-content-section.active {
+            display: block;
+        }
+        .admin-form-card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow);
+        }
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .admin-table th, .admin-table td {
+            padding: 12px;
+            border-bottom: 1px solid #f1f5f9;
+            text-align: left;
+        }
+        .grade-pill {
+            padding: 4px 10px;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            background: #e2e8f0;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar Navigation -->
+        <aside class="admin-sidebar">
+            <div class="logo-section">
+                <img src="coaching_center_logo_1775973304457.png" alt="CCC Logo">
+                <h3>Teacher Panel</h3>
+            </div>
+            <ul class="admin-nav">
+                <li class="active" onclick="showSection('studentsSection')"><i class="fas fa-users"></i> Students & Fee</li>
+                <li onclick="showSection('notesSection')"><i class="fas fa-book"></i> Upload Notes</li>
+                <li onclick="showSection('timetableSection')"><i class="fas fa-calendar-alt"></i> Time Table</li>
+                <li onclick="showSection('ranksSection')"><i class="fas fa-trophy"></i> Test Ranks</li>
+                <li onclick="showSection('attendanceSection')"><i class="fas fa-check-double"></i> Mark Attendance</li>
+                <li onclick="window.location.href='login.html'"><i class="fas fa-sign-out-alt"></i> Logout</li>
+            </ul>
+        </aside>
+
+        <!-- Main Content View -->
+        <main class="main-center" style="grid-column: 2 / span 2;">
+            <header class="dashboard-header" style="margin-bottom: 24px;">
+                <div>
+                    <h1>Welcome, Sadam Sir</h1>
+                    <p>Manage your coaching center efficiently</p>
+                </div>
+            </header>
+
+            <!-- 1. Students & Fee Section -->
+            <div id="studentsSection" class="admin-content-section active">
+                <div class="admin-form-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3 class="card-title" style="margin: 0;"><i class="fas fa-user-graduate"></i> Student Management</h3>
+                        <button onclick="addNewStudent()" class="btn btn-primary" style="width: auto;"><i class="fas fa-plus-circle"></i> Add New Student</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Student Name</th>
+                                    <th>Class</th>
+                                    <th>Phone</th>
+                                    <th>Fee Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminStudentList">
+                                <!-- Loaded from JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Notes Section -->
+            <div id="notesSection" class="admin-content-section">
+                <div class="admin-form-card">
+                    <h3 class="card-title"><i class="fas fa-cloud-upload-alt"></i> Upload New Material</h3>
+                    <form id="uploadNoteForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Note Title</label>
+                                <input type="text" id="noteTitle" placeholder="e.g. Physics Chapter 5" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Target Class</label>
+                                <select id="noteClass" required>
+                                    <option value="8">Class 8th</option>
+                                    <option value="9">Class 9th</option>
+                                    <option value="10">Class 10th</option>
+                                    <option value="11">Class 11th</option>
+                                    <option value="12">Class 12th</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: auto;">Add to Notes List</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 3. Time Table Section -->
+            <div id="timetableSection" class="admin-content-section">
+                <div class="admin-form-card">
+                    <h3 class="card-title"><i class="fas fa-edit"></i> Edit Time Table</h3>
+                    <div id="adminTimetableList">
+                        <!-- Timetable rows with inputs -->
+                    </div>
+                    <button onclick="saveTimetable()" class="btn btn-primary" style="margin-top: 15px;">Update All Classes</button>
+                </div>
+            </div>
+
+            <!-- 4. Ranks Section -->
+            <div id="ranksSection" class="admin-content-section">
+                <div class="admin-form-card">
+                    <h3 class="card-title"><i class="fas fa-medal"></i> Update Test Rankings</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Class</label>
+                            <select id="rankClassSelect" onchange="loadRanksForClass()">
+                                <option value="8">Class 8th</option>
+                                <option value="9">Class 9th</option>
+                                <option value="10">Class 10th</option>
+                                <option value="11">Class 11th</option>
+                                <option value="12">Class 12th</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="rankInputs">
+                        <!-- Rank inputs -->
+                    </div>
+                    <button onclick="saveRanks()" class="btn btn-primary" style="margin-top: 15px;">Save Rankings</button>
+                </div>
+            </div>
+
+            <!-- 5. Attendance Section -->
+            <div id="attendanceSection" class="admin-content-section">
+                <div class="admin-form-card">
+                    <h3 class="card-title"><i class="fas fa-calendar-check"></i> Mark Daily Attendance</h3>
+                    <div class="form-group">
+                        <label>Date: <span id="currentDateDisplay"></span></label>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Class</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminAttendanceList">
+                                <!-- Loaded from JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <button onclick="saveAttendance()" class="btn btn-primary" style="margin-top: 20px;">Submit Attendance</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals for editing -->
+    <div id="feeModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; align-items:center; justify-content:center;">
+        <div class="admin-form-card" style="width: 400px;">
+            <h3>Update Fee Status</h3>
+            <p id="feeStudentName" style="margin-bottom: 20px; color: var(--text-muted);"></p>
+            <div class="form-group">
+                <label>Paid Amount</label>
+                <input type="number" id="feePaidInput" placeholder="Enter amount">
+            </div>
+            <div class="form-group">
+                <label>Due Amount</label>
+                <input type="number" id="feeDueInput" placeholder="Enter amount">
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="closeFeeModal()" class="btn btn-outline">Cancel</button>
+                <button onclick="confirmFeeUpdate()" class="btn btn-primary">Update</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Admin specific UI logic
+        function showSection(sectionId) {
+            document.querySelectorAll('.admin-content-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.admin-nav li').forEach(l => l.classList.remove('active'));
+            
+            document.getElementById(sectionId).classList.add('active');
+            event.currentTarget.classList.add('active');
+            
+            // Re-load data if needed
+            if (sectionId === 'studentsSection') loadAdminStudents();
+            if (sectionId === 'attendanceSection') loadAdminAttendance();
+            if (sectionId === 'timetableSection') loadAdminTimetable();
+            if (sectionId === 'ranksSection') loadRanksForClass();
+        }
+
+        // Add this to your logic
+        document.getElementById('currentDateDisplay').textContent = new Date().toLocaleDateString();
+        loadAdminStudents();
+    </script>
+</body>
+</html>
