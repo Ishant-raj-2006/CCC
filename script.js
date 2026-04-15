@@ -69,24 +69,50 @@ window.loadRanksForClass = () => {
     const cls = document.getElementById('rankClassSelect').value;
     const rDiv = document.getElementById('rankInputs');
     if(!rDiv) return;
-    const existing = currentData.ranks[cls] || [];
-    let html = "";
-    for(let i=0; i<5; i++) {
-        const r = existing[i] || {name: "", score: ""};
-        html += `<div class="form-row"><div class="form-group"><input type="text" class="rn-n" placeholder="Name" value="${r.name}"></div><div class="form-group"><input type="number" class="rn-s" placeholder="Score" value="${r.score}"></div></div>`;
+    
+    // Clear and load existing
+    const data = currentData.ranks[cls] || { testName: "", list: [] };
+    document.getElementById('rankTestName').value = data.testName || "";
+    
+    rDiv.innerHTML = "";
+    const list = data.list || [];
+    if(list.length === 0) {
+        // Add 3 empty rows by default if no data
+        for(let i=0; i<3; i++) window.addRankRow();
+    } else {
+        list.forEach(r => window.createRankRow(r.name, r.score));
     }
-    rDiv.innerHTML = html;
 };
+
+window.createRankRow = (name = "", score = "") => {
+    const rDiv = document.getElementById('rankInputs');
+    const row = document.createElement('div');
+    row.className = 'form-row rank-item-row';
+    row.innerHTML = `
+        <div class="form-group"><input type="text" class="rn-n" placeholder="Student Name" value="${name}"></div>
+        <div class="form-group"><input type="number" class="rn-s" placeholder="Score/Points" value="${score}"></div>
+        <button onclick="this.parentElement.remove()" class="btn btn-danger" style="width: 40px; height: 40px; padding: 0; margin-top: 10px;"><i class="fas fa-times"></i></button>
+    `;
+    rDiv.appendChild(row);
+};
+
+window.addRankRow = () => window.createRankRow();
 
 window.saveRanks = () => {
     const cls = document.getElementById('rankClassSelect').value;
-    const r = []; document.querySelectorAll('#rankInputs .form-row').forEach(row => { 
+    const testName = document.getElementById('rankTestName').value;
+    const r = []; 
+    document.querySelectorAll('.rank-item-row').forEach(row => { 
         const name = row.querySelector('.rn-n').value;
-        const score = row.querySelector('.rn-s').value;
-        if(name) r.push({name, score});
+        const score = parseFloat(row.querySelector('.rn-s').value);
+        if(name && !isNaN(score)) r.push({name, score});
     });
-    currentData.ranks[cls] = r; 
-    saveToCloud().then(() => alert("Ranks Saved!"));
+    
+    // Auto-sort by score (descending)
+    r.sort((a, b) => b.score - a.score);
+    
+    currentData.ranks[cls] = { testName, list: r }; 
+    saveToCloud().then(() => alert("Rankings Saved and Sorted!"));
 };
 
 let editEmail = "";
@@ -193,15 +219,21 @@ document.addEventListener('DOMContentLoaded', () => {
         if(nList) {
             nList.innerHTML = "";
             (currentData.notes || []).filter(n => n.class === uClass).forEach(n => {
-                nList.innerHTML += `<div class="note-item"><span>${n.title}</span><a href="#" class="download-link" onclick="downloadNoteFile('${n.title}')"><i class="fas fa-download"></i></a></div>`;
+                nList.innerHTML += `<div class="note-item"><span>${n.title}</span><a href="${n.link}" target="_blank" class="download-link"><i class="fas fa-external-link-alt"></i> View/Open</a></div>`;
             });
         }
         
         const rnk = document.getElementById('studentRankings');
         if(rnk && currentData.ranks && currentData.ranks[uClass]) {
             const data = currentData.ranks[uClass];
-            if(data.length > 0) {
-                rnk.innerHTML = `<div class="ranking-card">${data.map((r,i)=>`<div class="rank-item"><div class="rank-num">${i+1}</div><div class="rank-details"><div class="rank-name">${r.name}</div><div class="rank-points">${r.score} marks</div></div></div>`).join('')}</div>`;
+            const testName = data.testName || "Class Test";
+            const list = data.list || [];
+            if(document.getElementById('rankClassLabel')) document.getElementById('rankClassLabel').textContent = testName;
+            
+            if(list.length > 0) {
+                rnk.innerHTML = `<div class="ranking-card">${list.map((r,i)=>`<div class="rank-item"><div class="rank-num">${i+1}</div><div class="rank-details"><div class="rank-name">${r.name}</div><div class="rank-points">${r.score} marks</div></div></div>`).join('')}</div>`;
+            } else {
+                rnk.innerHTML = `<p style="color: var(--text-muted); padding: 20px;">No rankings available for ${testName} yet.</p>`;
             }
         }
     }
@@ -217,8 +249,12 @@ document.addEventListener('DOMContentLoaded', () => {
             noteForm.addEventListener('submit', (e)=>{
                 e.preventDefault();
                 if(!currentData.notes) currentData.notes = [];
-                currentData.notes.push({title:document.getElementById('noteTitle').value, class:document.getElementById('noteClass').value});
-                saveToCloud().then(() => { alert("Note Added!"); e.target.reset(); });
+                currentData.notes.push({
+                    title: document.getElementById('noteTitle').value, 
+                    class: document.getElementById('noteClass').value,
+                    link: document.getElementById('noteLink').value || "#"
+                });
+                saveToCloud().then(() => { alert("Note Material Added!"); e.target.reset(); });
             });
             noteForm.hasListener = true;
         }
