@@ -193,6 +193,22 @@
             <div id="attendanceSection" class="admin-content-section">
                 <div class="admin-form-card">
                     <h3 class="card-title"><i class="fas fa-calendar-check"></i> Mark Daily Attendance</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Select Class</label>
+                            <select id="attClassSelect" onchange="window.loadAdminAttendance()">
+                                <option value="8">Class 8th</option>
+                                <option value="9">Class 9th</option>
+                                <option value="10">Class 10th</option>
+                                <option value="11">Class 11th</option>
+                                <option value="12">Class 12th</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Topic Name</label>
+                            <input type="text" id="attTopicName" placeholder="e.g. Newton's Laws">
+                        </div>
+                    </div>
                     <div class="form-group">
                         <label>Date: <span id="currentDateDisplay"></span></label>
                     </div>
@@ -200,8 +216,7 @@
                         <table class="admin-table">
                             <thead>
                                 <tr>
-                                    <th>Student</th>
-                                    <th>Class</th>
+                                    <th>Student Name (A-Z)</th>
                                     <th>Status</th>
                                 </tr>
                             </thead>
@@ -210,7 +225,7 @@
                             </tbody>
                         </table>
                     </div>
-                    <button onclick="saveAttendance()" class="btn btn-primary" style="margin-top: 20px;">Submit Attendance</button>
+                    <button onclick="window.saveAttendance()" class="btn btn-primary" style="margin-top: 20px;">Submit & Save Attendance</button>
                 </div>
             </div>
         </main>

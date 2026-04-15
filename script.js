@@ -22,7 +22,7 @@ let currentData = {
     timetable: { "8": "TBA", "9": "TBA", "10": "TBA", "11": "TBA", "12": "TBA" },
     notes: [],
     ranks: { "8": [], "9": [], "10": [], "11": [], "12": [] },
-    attendance: {}
+    attendanceRecords: []
 };
 
 const saveToCloud = () => set(ref(db, 'ccc_master_data'), currentData);
@@ -43,16 +43,41 @@ window.addNewStudent = () => {
 };
 
 window.loadAdminAttendance = () => {
+    const cls = document.getElementById('attClassSelect')?.value;
     const tb = document.getElementById('adminAttendanceList');
-    if(tb) tb.innerHTML = (currentData.students || []).map(s => `<tr><td>${s.name}</td><td>${s.class}th</td><td><select class="att-sel" data-email="${s.email}"><option value="P">P</option><option value="A">A</option></select></td></tr>`).join('');
+    if(!tb || !cls) return;
+    
+    // Filter by class and sort alphabetically
+    const studentsInClass = (currentData.students || [])
+        .filter(s => s.class === cls)
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+    tb.innerHTML = studentsInClass.map(s => `<tr><td>${s.name}</td><td><select class="att-sel" data-email="${s.email}"><option value="P">P</option><option value="A">A</option></select></td></tr>`).join('');
 };
 
 window.saveAttendance = () => {
+    const cls = document.getElementById('attClassSelect').value;
+    const topic = document.getElementById('attTopicName').value;
     const date = new Date().toLocaleDateString();
-    const day = {}; document.querySelectorAll('.att-sel').forEach(s => day[s.dataset.email] = s.value);
-    if(!currentData.attendance) currentData.attendance = {};
-    currentData.attendance[date] = day; 
-    saveToCloud().then(() => alert("Attendance Saved!"));
+    
+    if(!topic) { alert("Please enter Topic Name!"); return; }
+
+    const statusData = {}; 
+    document.querySelectorAll('.att-sel').forEach(s => statusData[s.dataset.email] = s.value);
+    
+    if(!currentData.attendanceRecords) currentData.attendanceRecords = [];
+    
+    currentData.attendanceRecords.push({
+        date: date,
+        class: cls,
+        topic: topic,
+        data: statusData
+    });
+    
+    saveToCloud().then(() => {
+        alert("Attendance for Topic: " + topic + " Saved Successfully!");
+        document.getElementById('attTopicName').value = "";
+    });
 };
 
 window.loadAdminTimetable = () => {
@@ -162,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(!currentData.timetable) currentData.timetable = { "8": "TBA", "9": "TBA", "10": "TBA", "11": "TBA", "12": "TBA" };
         if(!currentData.notes) currentData.notes = [];
         if(!currentData.ranks) currentData.ranks = { "8": [], "9": [], "10": [], "11": [], "12": [] };
-        if(!currentData.attendance) currentData.attendance = {};
+        if(!currentData.attendanceRecords) currentData.attendanceRecords = [];
 
         if (isLoginPage) handleLoginPage();
         else if (isAdminPage) handleAdminPage();
@@ -202,11 +227,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const attBody = document.getElementById('studentAttendanceBody');
         if(attBody) {
             attBody.innerHTML = "";
-            Object.keys(currentData.attendance || {}).forEach(date => {
-                const day = currentData.attendance[date];
-                if(day && day[uEmail]) {
-                    const status = day[uEmail];
-                    attBody.innerHTML += `<tr><td>${date}</td><td><span class="status-pill ${status==='P'?'present':'absent'}">${status}</span></td><td>Regular Session</td></tr>`;
+            (currentData.attendanceRecords || []).forEach(record => {
+                const uEmailLower = uEmail.toLowerCase();
+                const status = record.data ? (record.data[uEmail] || record.data[uEmailLower]) : null;
+                
+                if(status) {
+                    attBody.innerHTML += `<tr><td>${record.date}</td><td><span class="status-pill ${status==='P'?'present':'absent'}">${status}</span></td><td>${record.topic}</td></tr>`;
                 }
             });
         }
