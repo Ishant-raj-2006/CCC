@@ -340,17 +340,21 @@ window.loadRanksForClass = () => {
     const rDiv = document.getElementById('rankInputs');
     if (!rDiv) return;
 
-    // Clear and load existing
-    const data = currentData.ranks[cls] || { testName: "", list: [] };
-    document.getElementById('rankTestName').value = data.testName || "";
+    // For teacher workflow: always show all students of the selected class
+    // with student names prefilled and scores left blank. Also clear Test Name
+    // so teacher can enter a new test name and fill scores.
+    document.getElementById('rankTestName').value = "";
 
     rDiv.innerHTML = "";
-    const list = data.list || [];
-    if (list.length === 0) {
-        // Add 3 empty rows by default if no data
+    const studentsInClass = (currentData.students || [])
+        .filter(s => String(s.class) === String(cls))
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+    if (studentsInClass.length === 0) {
+        // If no students, show a few empty rows for manual entry
         for (let i = 0; i < 3; i++) window.addRankRow();
     } else {
-        list.forEach(r => window.createRankRow(r.name, r.score));
+        studentsInClass.forEach(s => window.createRankRow(s.name, ""));
     }
 };
 
@@ -370,19 +374,27 @@ window.addRankRow = () => window.createRankRow();
 
 window.saveRanks = () => {
     const cls = document.getElementById('rankClassSelect').value;
-    const testName = document.getElementById('rankTestName').value;
+    const testName = document.getElementById('rankTestName').value.trim();
     const r = [];
+
+    // Collect all rows; teacher may leave some scores blank - treat blank as null
     document.querySelectorAll('.rank-item-row').forEach(row => {
-        const name = row.querySelector('.rn-n').value;
-        const score = parseFloat(row.querySelector('.rn-s').value);
-        if (name && !isNaN(score)) r.push({ name, score });
+        const name = (row.querySelector('.rn-n')?.value || '').trim();
+        const scoreRaw = (row.querySelector('.rn-s')?.value || '').trim();
+        const score = scoreRaw === '' ? null : parseFloat(scoreRaw);
+        if (name) r.push({ name, score });
     });
 
-    // Auto-sort by score (descending)
-    r.sort((a, b) => b.score - a.score);
+    // Sort such that entries with numeric scores come first (desc), then blanks
+    r.sort((a, b) => {
+        if (a.score === null && b.score === null) return 0;
+        if (a.score === null) return 1;
+        if (b.score === null) return -1;
+        return b.score - a.score;
+    });
 
-    currentData.ranks[cls] = { testName, list: r };
-    saveToCloud().then(() => alert("Rankings Saved and Sorted!"));
+    currentData.ranks[cls] = { testName: testName, list: r };
+    saveToCloud().then(() => alert("Rankings Saved!"));
 };
 
 let editEmail = "";
@@ -557,13 +569,24 @@ document.addEventListener('DOMContentLoaded', () => {
         if (noteForm && !noteForm.hasListener) {
             noteForm.addEventListener('submit', (e) => {
                 e.preventDefault();
+                const title = (document.getElementById('noteTitle').value || '').trim();
+                const cls = (document.getElementById('noteClass').value || '').trim();
+                const link = (document.getElementById('noteLink').value || '').trim() || "#";
+                if (!title || !cls) { alert('Please enter note title and select class.'); return; }
+
                 if (!currentData.notes) currentData.notes = [];
-                currentData.notes.push({
-                    title: document.getElementById('noteTitle').value,
-                    class: document.getElementById('noteClass').value,
-                    link: document.getElementById('noteLink').value || "#"
+                currentData.notes.push({ title, class: cls, link });
+                // Persist locally first so UI updates immediately
+                persistLocalMirror();
+                // Save to cloud and refresh UI on completion
+                saveToCloud().then(() => {
+                    alert("Note Material Added!");
+                    e.target.reset();
+                    // Notify any listeners (students/admin views) to update
+                    window.dispatchEvent(new Event('ccc-data-updated'));
+                }).catch(() => {
+                    alert('Note saved locally but failed to sync to cloud.');
                 });
-                saveToCloud().then(() => { alert("Note Material Added!"); e.target.reset(); });
             });
             noteForm.hasListener = true;
         }
