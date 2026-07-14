@@ -197,7 +197,8 @@ window.addNewTeacher = (e) => {
     const username = document.getElementById('teacherUsername').value.trim().toLowerCase();
     const password = document.getElementById('teacherPassword').value.trim();
     const subject = document.getElementById('teacherSubject').value.trim();
-    const role = document.getElementById('teacherRole').value.trim();
+    const roleEl = document.getElementById('teacherRole');
+    const role = roleEl ? roleEl.value.trim() : 'Teacher';
 
     if (!name || !email || !phone || !username || !password) {
         alert('Please enter name, email, phone, username, and password.');
