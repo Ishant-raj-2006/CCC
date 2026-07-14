@@ -350,8 +350,12 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('loginForm')?.addEventListener('submit', (e) => {
             e.preventDefault();
             const email = document.getElementById('email').value.trim().toLowerCase();
-            const pass = document.getElementById('password').value;
-            const user = (currentData.students || []).find(s => s.email.toLowerCase() === email && s.phone === pass);
+            const pass = document.getElementById('password').value.trim();
+            const user = (currentData.students || []).find(s => {
+                const storedEmail = String(s.email || '').trim().toLowerCase();
+                const storedPhone = String(s.phone || '').trim();
+                return storedEmail === email && storedPhone === pass;
+            });
 
             if (user) {
                 localStorage.setItem('isLoggedIn', 'true');
