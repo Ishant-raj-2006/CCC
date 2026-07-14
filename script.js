@@ -33,7 +33,8 @@ let currentData = {
     timetable: { "8": "TBA", "9": "TBA", "10": "TBA", "11": "TBA", "12": "TBA" },
     notes: [],
     ranks: { "8": [], "9": [], "10": [], "11": [], "12": [] },
-    attendanceRecords: []
+    attendanceRecords: [],
+    lastUpdatedAt: new Date().toISOString()
 };
 
 const STORAGE_MIRROR_KEY = 'ccc_master_data_local';
@@ -65,23 +66,46 @@ const loadLocalMirror = () => {
 const mergeWithLocalMirror = (snapshotData) => {
     const mirror = loadLocalMirror() || {};
     const merged = { ...currentData, ...snapshotData };
+    const timestampIsNewer = mirror.lastUpdatedAt && (!snapshotData.lastUpdatedAt || mirror.lastUpdatedAt > snapshotData.lastUpdatedAt);
 
-    if (Array.isArray(snapshotData.students)) {
-        merged.students = snapshotData.students.map(student => {
-            const emailKey = String(student.email || '').trim().toLowerCase();
-            const mirrorStudent = (mirror.students || []).find(m => String(m.email || '').trim().toLowerCase() === emailKey);
-            return {
-                ...student,
-                photo: student.photo || mirrorStudent?.photo || student.photo
-            };
+    const mergeArrayByKey = (snapshotArr, mirrorArr, keyFn) => {
+        snapshotArr = Array.isArray(snapshotArr) ? snapshotArr : [];
+        mirrorArr = Array.isArray(mirrorArr) ? mirrorArr : [];
+        const map = new Map();
+        snapshotArr.forEach(item => map.set(keyFn(item), item));
+        mirrorArr.forEach(item => {
+            const key = keyFn(item);
+            if (!map.has(key)) {
+                map.set(key, item);
+            }
         });
+        return Array.from(map.values());
+    };
 
-        (mirror.students || []).forEach(mirrorStudent => {
-            const emailKey = String(mirrorStudent.email || '').trim().toLowerCase();
-            const exists = merged.students.some(s => String(s.email || '').trim().toLowerCase() === emailKey);
-            if (!exists) merged.students.push(mirrorStudent);
-        });
+    merged.students = mergeArrayByKey(snapshotData.students, mirror.students, student => String(student.email || '').trim().toLowerCase());
+    merged.teachers = mergeArrayByKey(snapshotData.teachers, mirror.teachers, teacher => String(teacher.username || teacher.email || '').trim().toLowerCase());
+    merged.notes = mergeArrayByKey(snapshotData.notes, mirror.notes, note => String(note.id || `${note.title}-${note.class}`).trim());
+    merged.attendanceRecords = mergeArrayByKey(snapshotData.attendanceRecords, mirror.attendanceRecords, record => `${record.class}-${record.date}-${record.topic}`);
+
+    merged.timetable = { ...(mirror.timetable || {}), ...(snapshotData.timetable || {}) };
+    merged.ranks = { ...(mirror.ranks || {}), ...(snapshotData.ranks || {}) };
+
+    if (timestampIsNewer) {
+        console.warn('Local mirror is newer than Firebase snapshot; preserving local pending changes.');
+        Object.assign(merged, mirror);
+        merged.students = mergeArrayByKey(snapshotData.students, mirror.students, student => String(student.email || '').trim().toLowerCase());
+        merged.teachers = mergeArrayByKey(snapshotData.teachers, mirror.teachers, teacher => String(teacher.username || teacher.email || '').trim().toLowerCase());
+        merged.notes = mergeArrayByKey(snapshotData.notes, mirror.notes, note => String(note.id || `${note.title}-${note.class}`).trim());
+        merged.attendanceRecords = mergeArrayByKey(snapshotData.attendanceRecords, mirror.attendanceRecords, record => `${record.class}-${record.date}-${record.topic}`);
+        merged.timetable = { ...(mirror.timetable || {}), ...(snapshotData.timetable || {}) };
+        merged.ranks = { ...(mirror.ranks || {}), ...(snapshotData.ranks || {}) };
     }
+
+    merged.students = merged.students.map(student => {
+        const emailKey = String(student.email || '').trim().toLowerCase();
+        const mirrorStudent = (mirror.students || []).find(m => String(m.email || '').trim().toLowerCase() === emailKey);
+        return { ...student, photo: student.photo || mirrorStudent?.photo || student.photo };
+    });
 
     return merged;
 };
@@ -130,6 +154,7 @@ window.tryAdminLogin = (username, password) => {
 };
 
 const saveToCloud = () => {
+    currentData.lastUpdatedAt = new Date().toISOString();
     console.log("Saving data locally and to Firebase...", currentData);
     persistLocalMirror();
 
@@ -650,8 +675,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (isAdminPage) {
                 window.loadAdminStudents();
+                window.loadAdminTeachers();
                 window.loadAdminAttendance();
                 window.loadAdminTimetable();
+                window.renderAdminNotes();
                 window.loadRanksForClass();
             } else if (!isLoginPage) {
                 handleStudentDashboard();
@@ -664,7 +691,6 @@ document.addEventListener('DOMContentLoaded', () => {
             window.loadAdminStudents();
             window.loadAdminAttendance();
             window.loadAdminTimetable();
-            window.renderAdminNotes();
             window.renderAdminNotes();
             window.loadRanksForClass();
         } else if (!isLoginPage) {
