@@ -75,6 +75,7 @@
             </div>
             <ul class="admin-nav">
                 <li class="active" onclick="showSection('studentsSection')"><i class="fas fa-users"></i> Students & Fee</li>
+                <li onclick="showSection('teachersSection')"><i class="fas fa-chalkboard-teacher"></i> Teachers</li>
                 <li onclick="showSection('notesSection')"><i class="fas fa-book"></i> Upload Notes</li>
                 <li onclick="showSection('timetableSection')"><i class="fas fa-calendar-alt"></i> Time Table</li>
                 <li onclick="showSection('ranksSection')"><i class="fas fa-trophy"></i> Test Ranks</li>
@@ -129,7 +130,56 @@
                 </div>
             </div>
 
-            <!-- 2. Notes Section -->
+            <!-- 2. Teachers Section -->
+            <div id="teachersSection" class="admin-content-section">
+                <div class="admin-form-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px;">
+                        <h3 class="card-title" style="margin: 0;"><i class="fas fa-chalkboard-teacher"></i> Teacher Management</h3>
+                        <button onclick="document.getElementById('teacherForm').scrollIntoView({ behavior: 'smooth' })" class="btn btn-primary" style="width: auto;">Add Teacher</button>
+                    </div>
+                    <form id="teacherForm" onsubmit="window.addNewTeacher(event)">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Teacher Name</label>
+                                <input type="text" id="teacherName" placeholder="e.g. Anshu Sir" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Email</label>
+                                <input type="email" id="teacherEmail" placeholder="example@ccc.com" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Subject</label>
+                                <input type="text" id="teacherSubject" placeholder="e.g. Physics">
+                            </div>
+                            <div class="form-group">
+                                <label>Role</label>
+                                <input type="text" id="teacherRole" placeholder="e.g. Senior Teacher">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: auto;">Save Teacher</button>
+                    </form>
+                </div>
+                <div class="admin-form-card">
+                    <h3 class="card-title"><i class="fas fa-list"></i> Teacher List</h3>
+                    <div class="table-responsive">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Subject</th>
+                                    <th>Role</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminTeacherList"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Notes Section -->
             <div id="notesSection" class="admin-content-section">
                 <div class="admin-form-card">
                     <h3 class="card-title"><i class="fas fa-cloud-upload-alt"></i> Upload New Material</h3>
@@ -276,6 +326,7 @@
             
             // Re-load data if needed
             if (sectionId === 'studentsSection') window.loadAdminStudents();
+            if (sectionId === 'teachersSection') window.loadAdminTeachers();
             if (sectionId === 'attendanceSection') window.loadAdminAttendance();
             if (sectionId === 'timetableSection') window.loadAdminTimetable();
             if (sectionId === 'ranksSection') window.loadRanksForClass();
@@ -287,6 +338,7 @@
         // Initial load (wait a bit for Firebase if needed, but onValue will handle it)
         setTimeout(() => {
             if(window.loadAdminStudents) window.loadAdminStudents();
+            if(window.loadAdminTeachers) window.loadAdminTeachers();
         }, 500);
     </script>
 </body>

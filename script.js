@@ -19,6 +19,7 @@ const db = getDatabase(app);
 
 let currentData = {
     students: [],
+    teachers: [],
     timetable: { "8": "TBA", "9": "TBA", "10": "TBA", "11": "TBA", "12": "TBA" },
     notes: [],
     ranks: { "8": [], "9": [], "10": [], "11": [], "12": [] },
@@ -49,6 +50,30 @@ const loadLocalMirror = () => {
         console.warn("Local mirror load failed:", err);
     }
     return null;
+};
+
+const mergeWithLocalMirror = (snapshotData) => {
+    const mirror = loadLocalMirror() || {};
+    const merged = { ...currentData, ...snapshotData };
+
+    if (Array.isArray(snapshotData.students)) {
+        merged.students = snapshotData.students.map(student => {
+            const emailKey = String(student.email || '').trim().toLowerCase();
+            const mirrorStudent = (mirror.students || []).find(m => String(m.email || '').trim().toLowerCase() === emailKey);
+            return {
+                ...student,
+                photo: student.photo || mirrorStudent?.photo || student.photo
+            };
+        });
+
+        (mirror.students || []).forEach(mirrorStudent => {
+            const emailKey = String(mirrorStudent.email || '').trim().toLowerCase();
+            const exists = merged.students.some(s => String(s.email || '').trim().toLowerCase() === emailKey);
+            if (!exists) merged.students.push(mirrorStudent);
+        });
+    }
+
+    return merged;
 };
 
 const syncStudentPhotoInUI = () => {
@@ -110,6 +135,40 @@ window.addNewStudent = () => {
         currentData.students.push({ name: n, class: c, email: e.toLowerCase(), phone: p, fee: { paid: 0, due: 1500 } });
         saveToCloud().then(() => alert("Student Added!"));
     }
+};
+
+window.loadAdminTeachers = () => {
+    const tb = document.getElementById('adminTeacherList');
+    if (!tb) return;
+    tb.innerHTML = (currentData.teachers || []).map(t => `
+        <tr>
+            <td>${t.name}</td>
+            <td>${t.email}</td>
+            <td>${t.subject || 'N/A'}</td>
+            <td>${t.role || 'Teacher'}</td>
+        </tr>
+    `).join('');
+};
+
+window.addNewTeacher = (e) => {
+    e.preventDefault();
+    const name = document.getElementById('teacherName').value.trim();
+    const email = document.getElementById('teacherEmail').value.trim().toLowerCase();
+    const subject = document.getElementById('teacherSubject').value.trim();
+    const role = document.getElementById('teacherRole').value.trim();
+
+    if (!name || !email) {
+        alert('Please enter teacher name and email.');
+        return;
+    }
+
+    if (!currentData.teachers) currentData.teachers = [];
+    currentData.teachers.push({ name, email, subject, role });
+    saveToCloud().then(() => {
+        alert('Teacher added successfully.');
+        document.getElementById('teacherForm').reset();
+        window.loadAdminTeachers();
+    });
 };
 
 window.loadAdminAttendance = () => {
@@ -332,10 +391,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load Realtime Data
     onValue(ref(db, 'ccc_master_data'), (snapshot) => {
         const val = snapshot.val();
-        if (val) currentData = val;
+        if (val) {
+            currentData = mergeWithLocalMirror(val);
+        }
 
         // Ensure default structures exist
         if (!currentData.students) currentData.students = [];
+        if (!currentData.teachers) currentData.teachers = [];
         if (!currentData.timetable) currentData.timetable = { "8": "TBA", "9": "TBA", "10": "TBA", "11": "TBA", "12": "TBA" };
         if (!currentData.notes) currentData.notes = [];
         if (!currentData.ranks) currentData.ranks = { "8": [], "9": [], "10": [], "11": [], "12": [] };
@@ -424,6 +486,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function handleAdminPage() {
         window.loadAdminStudents();
+        window.loadAdminTeachers();
         window.loadAdminAttendance();
         window.loadAdminTimetable();
         window.loadRanksForClass();
