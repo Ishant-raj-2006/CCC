@@ -259,7 +259,9 @@
             document.querySelectorAll('.admin-nav li').forEach(l => l.classList.remove('active'));
             
             document.getElementById(sectionId).classList.add('active');
-            if(event) event.currentTarget.classList.add('active');
+            if (window.event && window.event.currentTarget) {
+                window.event.currentTarget.classList.add('active');
+            }
             
             // Re-load data if needed
             if (sectionId === 'studentsSection') window.loadAdminStudents();

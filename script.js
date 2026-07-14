@@ -126,10 +126,13 @@ window.saveAttendance = () => {
     currentData.attendanceRecords.push({ date, class: cls, topic, data: statusData });
 
     // Disable button to prevent double clicks
-    const btn = event.currentTarget;
-    const originalText = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    const btn = document.querySelector('#attendanceSection .btn-primary');
+    let originalText = '';
+    if (btn) {
+        originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    }
 
     saveToCloud()
         .then(() => {
@@ -138,8 +141,10 @@ window.saveAttendance = () => {
             window.loadAdminAttendance(); // Refresh list
         })
         .finally(() => {
-            btn.disabled = false;
-            btn.innerHTML = originalText;
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
         });
 };
 
