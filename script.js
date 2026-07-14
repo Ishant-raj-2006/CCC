@@ -110,6 +110,36 @@ const mergeWithLocalMirror = (snapshotData) => {
     return merged;
 };
 
+const normalizeRanksData = (ranks) => {
+    const defaultRanks = { "8": [], "9": [], "10": [], "11": [], "12": [] };
+    if (!ranks || typeof ranks !== 'object') return defaultRanks;
+    if (Array.isArray(ranks)) {
+        const converted = { ...defaultRanks };
+        ranks.forEach(item => {
+            if (item && item.class) {
+                converted[String(item.class)] = {
+                    testName: item.testName || "",
+                    list: Array.isArray(item.list) ? item.list : []
+                };
+            }
+        });
+        return converted;
+    }
+    const normalized = {};
+    Object.keys(defaultRanks).forEach(cls => {
+        const value = ranks[cls];
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+            normalized[cls] = {
+                testName: String(value.testName || ""),
+                list: Array.isArray(value.list) ? value.list : []
+            };
+        } else {
+            normalized[cls] = { testName: "", list: [] };
+        }
+    });
+    return normalized;
+};
+
 const syncStudentPhotoInUI = () => {
     const img = document.getElementById('studentProfileImg');
     if (!img) return;
@@ -473,6 +503,7 @@ window.saveRanks = () => {
     });
 
     currentData.ranks[cls] = { testName: testName, list: r };
+    persistLocalMirror();
     saveToCloud().then(() => alert("Rankings Saved!"));
 };
 
@@ -559,7 +590,7 @@ document.addEventListener('DOMContentLoaded', () => {
             link: note.link || '#',
             createdAt: note.createdAt || new Date().toISOString()
         }));
-        if (!currentData.ranks) currentData.ranks = { "8": [], "9": [], "10": [], "11": [], "12": [] };
+        currentData.ranks = normalizeRanksData(currentData.ranks);
         if (!currentData.attendanceRecords) currentData.attendanceRecords = [];
 
         if (isLoginPage) handleLoginPage();
@@ -623,7 +654,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const nList = document.getElementById('studentNotesList');
         if (nList) {
             nList.innerHTML = "";
-            (currentData.notes || []).filter(n => n.class === uClass).forEach(n => {
+            (currentData.notes || []).filter(n => String(n.class) === String(uClass)).forEach(n => {
                 nList.innerHTML += `<div class="note-item"><span>${n.title}</span><a href="${n.link}" target="_blank" class="download-link"><i class="fas fa-external-link-alt"></i> View/Open</a></div>`;
             });
         }
