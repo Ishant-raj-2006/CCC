@@ -25,23 +25,52 @@ let currentData = {
     attendanceRecords: []
 };
 
+const STORAGE_MIRROR_KEY = 'ccc_master_data_local';
+
+const persistLocalMirror = () => {
+    try {
+        localStorage.setItem(STORAGE_MIRROR_KEY, JSON.stringify(currentData));
+    } catch (err) {
+        console.warn("Local mirror save failed:", err);
+    }
+};
+
+const loadLocalMirror = () => {
+    try {
+        const cached = localStorage.getItem(STORAGE_MIRROR_KEY);
+        if (cached) {
+            const parsed = JSON.parse(cached);
+            if (parsed) {
+                currentData = parsed;
+                return parsed;
+            }
+        }
+    } catch (err) {
+        console.warn("Local mirror load failed:", err);
+    }
+    return null;
+};
+
+const syncStudentPhotoInUI = () => {
+    const img = document.getElementById('studentProfileImg');
+    if (!img) return;
+
+    const uEmail = localStorage.getItem('userEmail');
+    const student = (currentData.students || []).find(x => x.email?.toLowerCase() === uEmail?.toLowerCase());
+    img.src = student?.photo || 'student_profile_placeholder_1775973326014.png';
+};
+
 const saveToCloud = () => {
-    console.log("Attempting to save data to Firebase...", currentData);
+    console.log("Saving data locally and to Firebase...", currentData);
+    persistLocalMirror();
 
-    // Create a timeout promise
-    const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Connection Timeout: Database is taking too long to respond. Please check your internet or Firebase console.")), 15000);
-    });
-
-    const savePromise = set(ref(db, 'ccc_master_data'), currentData);
-
-    return Promise.race([savePromise, timeoutPromise])
+    return set(ref(db, 'ccc_master_data'), currentData)
         .then(() => {
             console.log("Data saved successfully!");
         })
         .catch(err => {
             console.error("Firebase Save Error:", err);
-            alert("UPLOAD FAILED!\n" + err.message + "\n\nTip: Make sure you are ONLINE and have clicked 'Publish' on your Firebase Rules.");
+            console.warn("Changes were still saved locally for immediate use.");
             throw err;
         });
 };
@@ -124,8 +153,9 @@ window.saveAttendance = () => {
 
     if (!currentData.attendanceRecords) currentData.attendanceRecords = [];
     currentData.attendanceRecords.push({ date, class: cls, topic, data: statusData });
+    persistLocalMirror();
+    window.dispatchEvent(new Event('ccc-data-updated'));
 
-    // Disable button to prevent double clicks
     const btn = document.querySelector('#attendanceSection .btn-primary');
     let originalText = '';
     if (btn) {
@@ -138,7 +168,12 @@ window.saveAttendance = () => {
         .then(() => {
             alert("SUCCESS! Attendance for " + cls + "th (" + topic + ") has been saved.");
             topicEl.value = "";
-            window.loadAdminAttendance(); // Refresh list
+            window.loadAdminAttendance();
+        })
+        .catch(() => {
+            alert("Attendance saved locally and will sync when connection is available.");
+            topicEl.value = "";
+            window.loadAdminAttendance();
         })
         .finally(() => {
             if (btn) {
@@ -238,6 +273,33 @@ document.addEventListener('DOMContentLoaded', () => {
     const isLoggedIn = localStorage.getItem('isLoggedIn');
     const isAdmin = localStorage.getItem('isAdmin');
 
+    loadLocalMirror();
+
+    const changePhotoBtn = document.getElementById('changePhotoBtn');
+    const photoInput = document.getElementById('photoInput');
+    changePhotoBtn?.addEventListener('click', () => photoInput?.click());
+    photoInput?.addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            const uEmail = localStorage.getItem('userEmail');
+            if (!uEmail) return;
+
+            const student = (currentData.students || []).find(x => x.email?.toLowerCase() === uEmail.toLowerCase());
+            if (!student) return;
+
+            student.photo = reader.result;
+            persistLocalMirror();
+            saveToCloud().catch(() => {});
+            syncStudentPhotoInUI();
+            alert('Profile photo updated successfully!');
+            e.target.value = '';
+        };
+        reader.readAsDataURL(file);
+    });
+
     if (isAdminPage && (!isLoggedIn || !isAdmin)) {
         window.location.href = 'admin-login.html'; return;
     }
@@ -309,6 +371,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (document.getElementById('studentFeeBody') && s)
             document.getElementById('studentFeeBody').innerHTML = `<tr><td>Paid</td><td>₹${s.fee.paid}</td></tr><tr><td>Due</td><td style="color:red">₹${s.fee.due}</td></tr>`;
 
+        syncStudentPhotoInUI();
+
         const nList = document.getElementById('studentNotesList');
         if (nList) {
             nList.innerHTML = "";
@@ -353,6 +417,36 @@ document.addEventListener('DOMContentLoaded', () => {
             noteForm.hasListener = true;
         }
     }
+
+    window.addEventListener('storage', (event) => {
+        if (event.key === STORAGE_MIRROR_KEY && event.newValue) {
+            try {
+                currentData = JSON.parse(event.newValue);
+            } catch (err) {
+                console.warn('Could not parse mirrored data:', err);
+            }
+
+            if (isAdminPage) {
+                window.loadAdminStudents();
+                window.loadAdminAttendance();
+                window.loadAdminTimetable();
+                window.loadRanksForClass();
+            } else if (!isLoginPage) {
+                handleStudentDashboard();
+            }
+        }
+    });
+
+    window.addEventListener('ccc-data-updated', () => {
+        if (isAdminPage) {
+            window.loadAdminStudents();
+            window.loadAdminAttendance();
+            window.loadAdminTimetable();
+            window.loadRanksForClass();
+        } else if (!isLoginPage) {
+            handleStudentDashboard();
+        }
+    });
 
     document.getElementById('logoutBtn')?.addEventListener('click', () => { localStorage.clear(); window.location.href = 'login.html'; });
 });

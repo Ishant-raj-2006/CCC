@@ -335,6 +335,31 @@ td {
     text-align: center;
 }
 
+.admin-login-logo {
+    width: 84px;
+    height: 84px;
+    object-fit: cover;
+    border-radius: 16px;
+    margin-bottom: 16px;
+    border: 2px solid rgba(15, 23, 42, 0.08);
+}
+
+.admin-photo {
+    width: 96px;
+    height: 96px;
+    object-fit: cover;
+    border-radius: 50%;
+    margin: 0 auto 20px;
+    display: block;
+    border: 4px solid rgba(37, 99, 235, 0.2);
+}
+
+.auth-switch-btn {
+    margin-top: 12px;
+    border: 1px solid #cbd5e1;
+    background: white;
+}
+
 .login-header img {
     width: 80px;
     margin-bottom: 20px;
