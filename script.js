@@ -17,9 +17,19 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 
+const DEFAULT_TEACHER = {
+    name: "Ishant Raj",
+    email: "ishant_raj_2006@ccc.com",
+    phone: "1234567890",
+    username: "Ishant_raj_2006",
+    password: "Hello123",
+    subject: "Admin",
+    role: "Admin"
+};
+
 let currentData = {
     students: [],
-    teachers: [],
+    teachers: [DEFAULT_TEACHER],
     timetable: { "8": "TBA", "9": "TBA", "10": "TBA", "11": "TBA", "12": "TBA" },
     notes: [],
     ranks: { "8": [], "9": [], "10": [], "11": [], "12": [] },
@@ -417,7 +427,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Ensure default structures exist
         if (!currentData.students) currentData.students = [];
-        if (!currentData.teachers) currentData.teachers = [];
+        if (!currentData.teachers || !Array.isArray(currentData.teachers)) currentData.teachers = [];
+        if (currentData.teachers.length === 0) currentData.teachers.push(DEFAULT_TEACHER);
         if (!currentData.timetable) currentData.timetable = { "8": "TBA", "9": "TBA", "10": "TBA", "11": "TBA", "12": "TBA" };
         if (!currentData.notes) currentData.notes = [];
         if (!currentData.ranks) currentData.ranks = { "8": [], "9": [], "10": [], "11": [], "12": [] };
