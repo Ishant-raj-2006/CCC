@@ -98,10 +98,28 @@ const syncStudentPhotoInUI = () => {
 window.tryAdminLogin = (username, password) => {
     const normalizedUsername = String(username || '').trim().toLowerCase();
     const normalizedPassword = String(password || '').trim();
-    const teacher = (currentData.teachers || []).find(t => {
-        return String(t.username || '').trim().toLowerCase() === normalizedUsername
-            && String(t.password || '').trim() === normalizedPassword;
-    });
+
+    const matchInList = (list) => {
+        if (!Array.isArray(list)) return null;
+        return list.find(t => {
+            const u = String(t.username || '').trim().toLowerCase();
+            const e = String(t.email || '').trim().toLowerCase();
+            const p = String(t.password || '').trim();
+            return (u === normalizedUsername || e === normalizedUsername) && p === normalizedPassword;
+        });
+    };
+
+    // Check in-memory data first
+    let teacher = matchInList(currentData.teachers || []);
+    if (!teacher) {
+        // Fallback: check local mirror (helps when realtime Firebase hasn't synced yet)
+        try {
+            const mirror = loadLocalMirror();
+            teacher = matchInList((mirror && mirror.teachers) || []);
+        } catch (err) {
+            console.warn('Failed reading local mirror for admin login fallback', err);
+        }
+    }
 
     if (teacher) {
         window.currentTeacherEmail = teacher.email || '';
