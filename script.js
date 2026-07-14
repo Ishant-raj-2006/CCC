@@ -335,6 +335,44 @@ window.saveTimetable = () => {
     saveToCloud().then(() => alert("Timetable Updated!"));
 };
 
+window.renderAdminNotes = () => {
+    const nList = document.getElementById('adminNotesList');
+    if (!nList) return;
+
+    const notes = Array.isArray(currentData.notes) ? currentData.notes : [];
+    if (notes.length === 0) {
+        nList.innerHTML = `<tr><td colspan="4" style="color: var(--text-muted);">No notes uploaded yet.</td></tr>`;
+        return;
+    }
+
+    nList.innerHTML = notes
+        .slice()
+        .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
+        .map(note => `
+            <tr>
+                <td>${note.title}</td>
+                <td>${note.class}th</td>
+                <td><a href="${note.link}" target="_blank" class="download-link"><i class="fas fa-external-link-alt"></i> Open</a></td>
+                <td><button onclick="window.deleteNote('${note.id}')" class="btn btn-danger" style="padding: 8px 12px;">Delete</button></td>
+            </tr>
+        `).join('');
+};
+
+window.deleteNote = (noteId) => {
+    if (!confirm('Are you sure you want to delete this note?')) return;
+    currentData.notes = (currentData.notes || []).filter(n => n.id !== noteId);
+    persistLocalMirror();
+    saveToCloud().then(() => {
+        alert('Note deleted successfully.');
+        window.renderAdminNotes();
+        window.dispatchEvent(new Event('ccc-data-updated'));
+    }).catch(() => {
+        alert('Note deleted locally. It will sync when the connection returns.');
+        window.renderAdminNotes();
+        window.dispatchEvent(new Event('ccc-data-updated'));
+    });
+};
+
 window.loadRanksForClass = () => {
     const cls = document.getElementById('rankClassSelect').value;
     const rDiv = document.getElementById('rankInputs');
@@ -473,7 +511,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!currentData.teachers || !Array.isArray(currentData.teachers)) currentData.teachers = [];
         if (currentData.teachers.length === 0) currentData.teachers.push(DEFAULT_TEACHER);
         if (!currentData.timetable) currentData.timetable = { "8": "TBA", "9": "TBA", "10": "TBA", "11": "TBA", "12": "TBA" };
-        if (!currentData.notes) currentData.notes = [];
+        currentData.notes = (Array.isArray(currentData.notes) ? currentData.notes : []).map((note, index) => ({
+            id: note.id || `note-${note.class || 'unknown'}-${index}-${Math.random().toString(36).slice(2, 8)}`,
+            title: note.title || 'Untitled Note',
+            class: note.class || '8',
+            link: note.link || '#',
+            createdAt: note.createdAt || new Date().toISOString()
+        }));
         if (!currentData.ranks) currentData.ranks = { "8": [], "9": [], "10": [], "11": [], "12": [] };
         if (!currentData.attendanceRecords) currentData.attendanceRecords = [];
 
@@ -563,6 +607,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.loadAdminTeachers();
         window.loadAdminAttendance();
         window.loadAdminTimetable();
+        window.renderAdminNotes();
         window.loadRanksForClass();
 
         const noteForm = document.getElementById('uploadNoteForm');
@@ -575,13 +620,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!title || !cls) { alert('Please enter note title and select class.'); return; }
 
                 if (!currentData.notes) currentData.notes = [];
-                currentData.notes.push({ title, class: cls, link });
+                const noteId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+                currentData.notes.push({ id: noteId, title, class: cls, link, createdAt: new Date().toISOString() });
                 // Persist locally first so UI updates immediately
                 persistLocalMirror();
+                window.renderAdminNotes();
                 // Save to cloud and refresh UI on completion
                 saveToCloud().then(() => {
                     alert("Note Material Added!");
                     e.target.reset();
+                    window.renderAdminNotes();
                     // Notify any listeners (students/admin views) to update
                     window.dispatchEvent(new Event('ccc-data-updated'));
                 }).catch(() => {
@@ -616,6 +664,8 @@ document.addEventListener('DOMContentLoaded', () => {
             window.loadAdminStudents();
             window.loadAdminAttendance();
             window.loadAdminTimetable();
+            window.renderAdminNotes();
+            window.renderAdminNotes();
             window.loadRanksForClass();
         } else if (!isLoginPage) {
             handleStudentDashboard();
