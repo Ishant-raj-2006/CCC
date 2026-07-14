@@ -173,8 +173,20 @@ window.loadAdminTeachers = () => {
             <td>${t.phone || 'N/A'}</td>
             <td>${t.username || 'N/A'}</td>
             <td>${t.role || 'Teacher'}</td>
+            <td>
+                <button onclick="deleteTeacher('${t.username || t.email}')" class="btn btn-danger" style="padding: 8px 12px;">Delete</button>
+            </td>
         </tr>
     `).join('');
+};
+
+window.deleteTeacher = (identifier) => {
+    if (!confirm('Are you sure you want to delete this teacher?')) return;
+    currentData.teachers = (currentData.teachers || []).filter(t => t.username !== identifier && t.email !== identifier);
+    saveToCloud().then(() => {
+        alert('Teacher deleted successfully.');
+        window.loadAdminTeachers();
+    });
 };
 
 window.addNewTeacher = (e) => {
