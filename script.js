@@ -85,6 +85,22 @@ const syncStudentPhotoInUI = () => {
     img.src = student?.photo || 'student_profile_placeholder_1775973326014.png';
 };
 
+window.tryAdminLogin = (username, password) => {
+    const normalizedUsername = String(username || '').trim().toLowerCase();
+    const normalizedPassword = String(password || '').trim();
+    const teacher = (currentData.teachers || []).find(t => {
+        return String(t.username || '').trim().toLowerCase() === normalizedUsername
+            && String(t.password || '').trim() === normalizedPassword;
+    });
+
+    if (teacher) {
+        window.currentTeacherEmail = teacher.email || '';
+        return true;
+    }
+
+    return false;
+};
+
 const saveToCloud = () => {
     console.log("Saving data locally and to Firebase...", currentData);
     persistLocalMirror();
@@ -144,7 +160,8 @@ window.loadAdminTeachers = () => {
         <tr>
             <td>${t.name}</td>
             <td>${t.email}</td>
-            <td>${t.subject || 'N/A'}</td>
+            <td>${t.phone || 'N/A'}</td>
+            <td>${t.username || 'N/A'}</td>
             <td>${t.role || 'Teacher'}</td>
         </tr>
     `).join('');
@@ -154,16 +171,19 @@ window.addNewTeacher = (e) => {
     e.preventDefault();
     const name = document.getElementById('teacherName').value.trim();
     const email = document.getElementById('teacherEmail').value.trim().toLowerCase();
+    const phone = document.getElementById('teacherPhone').value.trim();
+    const username = document.getElementById('teacherUsername').value.trim().toLowerCase();
+    const password = document.getElementById('teacherPassword').value.trim();
     const subject = document.getElementById('teacherSubject').value.trim();
     const role = document.getElementById('teacherRole').value.trim();
 
-    if (!name || !email) {
-        alert('Please enter teacher name and email.');
+    if (!name || !email || !phone || !username || !password) {
+        alert('Please enter name, email, phone, username, and password.');
         return;
     }
 
     if (!currentData.teachers) currentData.teachers = [];
-    currentData.teachers.push({ name, email, subject, role });
+    currentData.teachers.push({ name, email, phone, username, password, subject, role });
     saveToCloud().then(() => {
         alert('Teacher added successfully.');
         document.getElementById('teacherForm').reset();
