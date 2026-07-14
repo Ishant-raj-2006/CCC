@@ -95,8 +95,19 @@
             <!-- 1. Students & Fee Section -->
             <div id="studentsSection" class="admin-content-section active">
                 <div class="admin-form-card">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h3 class="card-title" style="margin: 0;"><i class="fas fa-user-graduate"></i> Student Management</h3>
+                    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 20px;">
+                        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                            <h3 class="card-title" style="margin: 0;"><i class="fas fa-user-graduate"></i> Student Management</h3>
+                            <label style="font-size: 0.95rem; color: var(--text-muted);">Show Class:</label>
+                            <select id="studentClassFilter" onchange="window.loadAdminStudents()" style="padding: 10px 12px; border-radius: 12px; border: 1px solid #e2e8f0; background: white;">
+                                <option value="all">All Classes</option>
+                                <option value="8">Class 8th</option>
+                                <option value="9">Class 9th</option>
+                                <option value="10">Class 10th</option>
+                                <option value="11">Class 11th</option>
+                                <option value="12">Class 12th</option>
+                            </select>
+                        </div>
                         <button onclick="addNewStudent()" class="btn btn-primary" style="width: auto;"><i class="fas fa-plus-circle"></i> Add New Student</button>
                     </div>
                     <div class="table-responsive">

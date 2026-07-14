@@ -58,7 +58,7 @@ body {
 .logo-section img {
     height: 50px;
     width: 50px;
-    border-radius: 12px;
+    border-radius: 50%;
     object-fit: cover;
     border: 2px solid rgba(255,255,255,0.2);
 }
@@ -363,6 +363,7 @@ td {
 .login-header img {
     width: 80px;
     margin-bottom: 20px;
+    border-radius: 50%;
 }
 
 .login-header h2 {

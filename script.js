@@ -78,7 +78,29 @@ const saveToCloud = () => {
 // Admin Global Functions
 window.loadAdminStudents = () => {
     const tb = document.getElementById('adminStudentList');
-    if (tb) tb.innerHTML = (currentData.students || []).map(s => `<tr><td>${s.name}</td><td>${s.class}th</td><td>${s.phone}</td><td>P:₹${s.fee.paid}<br>D:₹${s.fee.due}</td><td><button onclick="openFeeModal('${s.email}','${s.name}')" class="btn btn-outline">Edit Fee</button></td></tr>`).join('');
+    const filter = document.getElementById('studentClassFilter')?.value || 'all';
+    const students = (currentData.students || []).filter(s => filter === 'all' || s.class === filter);
+    if (tb) tb.innerHTML = students.sort((a, b) => a.name.localeCompare(b.name)).map(s => `
+        <tr>
+            <td>${s.name}</td>
+            <td>${s.class}th</td>
+            <td>${s.phone}</td>
+            <td>P:₹${s.fee.paid}<br>D:₹${s.fee.due}</td>
+            <td style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button onclick="openFeeModal('${s.email}','${s.name}')" class="btn btn-outline">Edit Fee</button>
+                <button onclick="deleteStudent('${s.email}')" class="btn btn-danger" style="padding: 10px 14px;">Delete</button>
+            </td>
+        </tr>
+    `).join('');
+};
+
+window.deleteStudent = (email) => {
+    if (!confirm('Are you sure you want to delete this student?')) return;
+    currentData.students = (currentData.students || []).filter(s => s.email !== email);
+    saveToCloud().then(() => {
+        alert('Student deleted successfully.');
+        window.loadAdminStudents();
+    });
 };
 
 window.addNewStudent = () => {
