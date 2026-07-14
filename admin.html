@@ -63,6 +63,41 @@
             font-weight: 600;
             background: #e2e8f0;
         }
+        #thankYouOverlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            z-index: 20000;
+        }
+        #thankYouOverlay.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+        .thank-you-card {
+            background: white;
+            padding: 28px 32px;
+            border-radius: 24px;
+            box-shadow: 0 30px 70px rgba(15, 23, 42, 0.25);
+            text-align: center;
+            max-width: 320px;
+            width: 100%;
+        }
+        .thank-you-card h2 {
+            margin: 0 0 14px;
+            font-size: 1.8rem;
+            color: #111827;
+        }
+        .thank-you-card p {
+            margin: 0;
+            color: #475569;
+            font-size: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -347,6 +382,13 @@
                 <button onclick="closeFeeModal()" class="btn btn-outline">Cancel</button>
                 <button onclick="confirmFeeUpdate()" class="btn btn-primary">Update</button>
             </div>
+        </div>
+    </div>
+
+    <div id="thankYouOverlay">
+        <div class="thank-you-card">
+            <h2>Thank you!</h2>
+            <p id="thankYouMessage">Your update is saved.</p>
         </div>
     </div>
 

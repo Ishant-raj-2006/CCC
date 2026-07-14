@@ -153,6 +153,21 @@ window.tryAdminLogin = (username, password) => {
     return false;
 };
 
+const showThankYouMessage = (message = 'Thank you! Your update is saved.', duration = 1000) => {
+    const overlay = document.getElementById('thankYouOverlay');
+    const messageEl = document.getElementById('thankYouMessage');
+    if (!overlay) return;
+
+    if (messageEl) messageEl.textContent = message;
+    overlay.classList.add('visible');
+
+    if (window._thankYouTimeout) clearTimeout(window._thankYouTimeout);
+    window._thankYouTimeout = setTimeout(() => {
+        overlay.classList.remove('visible');
+        window._thankYouTimeout = null;
+    }, duration);
+};
+
 const saveToCloud = () => {
     currentData.lastUpdatedAt = new Date().toISOString();
     console.log("Saving data locally and to Firebase...", currentData);
@@ -161,6 +176,7 @@ const saveToCloud = () => {
     return set(ref(db, 'ccc_master_data'), currentData)
         .then(() => {
             console.log("Data saved successfully!");
+            showThankYouMessage();
         })
         .catch(err => {
             console.error("Firebase Save Error:", err);
