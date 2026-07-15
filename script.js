@@ -223,8 +223,9 @@ window.deleteStudent = (email) => {
 window.addNewStudent = () => {
     const n = prompt("Name:"), c = prompt("Class:"), e = prompt("Email:"), p = prompt("Phone:");
     if (n && c && e && p) {
+        const cleanedClass = c.replace(/\D/g, '') || "10";
         if (!currentData.students) currentData.students = [];
-        currentData.students.push({ name: n, class: c, email: e.toLowerCase(), phone: p, fee: { paid: 0, due: 1500 } });
+        currentData.students.push({ name: n, class: cleanedClass, email: e.toLowerCase(), phone: p, fee: { paid: 0, due: 1500 } });
         saveToCloud().then(() => {
             window.loadAdminStudents();
         });
@@ -280,25 +281,42 @@ window.addNewTeacher = (e) => {
     });
 };
 
+window.updateAttendanceCounts = () => {
+    const groups = document.querySelectorAll('.att-btn-group');
+    let present = 0;
+    let absent = 0;
+    groups.forEach(group => {
+        const status = group.dataset.status;
+        if (status === 'P') present++;
+        else if (status === 'A') absent++;
+    });
+    const presEl = document.getElementById('attPresentCount');
+    const absEl = document.getElementById('attAbsentCount');
+    if (presEl) presEl.textContent = present;
+    if (absEl) absEl.textContent = absent;
+};
+
 window.loadAdminAttendance = () => {
     const cls = document.getElementById('attClassSelect')?.value;
     const tb = document.getElementById('adminAttendanceList');
     if (!tb || !cls) return;
 
     const studentsInClass = (currentData.students || [])
-        .filter(s => s.class === cls)
+        .filter(s => String(s.class) === String(cls))
         .sort((a, b) => a.name.localeCompare(b.name));
 
     tb.innerHTML = studentsInClass.map(s => `
         <tr>
             <td>${s.name}</td>
             <td>
-                <div class="att-btn-group" data-email="${s.email}">
-                    <button class="att-btn present-btn" onclick="window.toggleAttendance(this, 'P')">P</button>
+                <div class="att-btn-group" data-email="${s.email}" data-status="P">
+                    <button class="att-btn present-btn selected" onclick="window.toggleAttendance(this, 'P')">P</button>
                     <button class="att-btn absent-btn" onclick="window.toggleAttendance(this, 'A')">A</button>
                 </div>
             </td>
         </tr>`).join('');
+
+    window.updateAttendanceCounts();
 };
 
 window.toggleAttendance = (btn, status) => {
@@ -306,6 +324,7 @@ window.toggleAttendance = (btn, status) => {
     group.querySelectorAll('.att-btn').forEach(b => b.classList.remove('selected'));
     btn.classList.add('selected');
     group.dataset.status = status;
+    window.updateAttendanceCounts();
 };
 
 window.saveAttendance = () => {
@@ -531,14 +550,9 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.href = 'login.html'; return;
     }
 
-    // Load Realtime Data
-    onValue(ref(db, 'ccc_master_data'), (snapshot) => {
-        const val = snapshot.val();
-        if (val) {
-            currentData = mergeWithLocalMirror(val);
-        }
-
-        // Ensure default structures exist
+    // Helper to ensure structure defaults
+    const ensureStructures = () => {
+        if (!currentData) currentData = {};
         if (!currentData.students) currentData.students = [];
         if (!currentData.teachers || !Array.isArray(currentData.teachers)) currentData.teachers = [];
         if (currentData.teachers.length === 0) currentData.teachers.push(DEFAULT_TEACHER);
@@ -552,10 +566,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }));
         currentData.ranks = normalizeRanksData(currentData.ranks);
         if (!currentData.attendanceRecords) currentData.attendanceRecords = [];
+    };
 
-        if (isLoginPage) handleLoginPage();
-        else if (isAdminPage) handleAdminPage();
+    // Render immediately from local copy
+    ensureStructures();
+    if (!isLoginPage) {
+        if (isAdminPage) handleAdminPage();
         else handleStudentDashboard();
+    } else {
+        handleLoginPage();
+    }
+
+    // Load Realtime Data
+    onValue(ref(db, 'ccc_master_data'), (snapshot) => {
+        const val = snapshot.val();
+        if (val) {
+            currentData = mergeWithLocalMirror(val);
+        }
+
+        ensureStructures();
+
+        if (!isLoginPage) {
+            if (isAdminPage) handleAdminPage();
+            else handleStudentDashboard();
+        }
     });
 
     function handleLoginPage() {
