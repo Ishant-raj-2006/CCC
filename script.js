@@ -225,7 +225,7 @@ window.addNewStudent = () => {
     if (n && c && e && p) {
         const cleanedClass = c.replace(/\D/g, '') || "10";
         if (!currentData.students) currentData.students = [];
-        currentData.students.push({ name: n, class: cleanedClass, email: e.toLowerCase(), phone: p, fee: { paid: 0, due: 1500 } });
+        currentData.students.push({ name: n, class: cleanedClass, email: e.toLowerCase(), phone: p, fee: { paid: 0, due: 0 } });
         saveToCloud().then(() => {
             window.loadAdminStudents();
         });
