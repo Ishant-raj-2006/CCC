@@ -183,7 +183,7 @@ window.tryAdminLogin = (username, password) => {
     return false;
 };
 
-const showThankYouMessage = (message = 'Thank you! Your update is saved.', duration = 1000) => {
+const showThankYouMessage = (message = 'Thank you Sir!', duration = 500) => {
     const overlay = document.getElementById('thankYouOverlay');
     const messageEl = document.getElementById('thankYouMessage');
     if (!overlay) return;
@@ -203,16 +203,23 @@ const saveToCloud = () => {
     console.log("Saving data locally and to Firebase...", currentData);
     persistLocalMirror();
 
-    return set(ref(db, 'ccc_master_data'), currentData)
-        .then(() => {
-            console.log("Data saved successfully!");
-            showThankYouMessage();
-        })
-        .catch(err => {
-            console.error("Firebase Save Error:", err);
-            console.warn("Changes were still saved locally for immediate use.");
-            throw err;
-        });
+    // Trigger local update immediately
+    window.dispatchEvent(new Event('ccc-data-updated'));
+
+    return new Promise((resolve) => {
+        showThankYouMessage('Thank you Sir!', 500);
+
+        set(ref(db, 'ccc_master_data'), currentData)
+            .then(() => {
+                console.log("Data saved successfully to Firebase!");
+                resolve();
+            })
+            .catch(err => {
+                console.error("Firebase Save Error:", err);
+                console.warn("Changes saved locally.");
+                resolve(); // Resolve anyway so caller's flow continues
+            });
+    });
 };
 
 // Admin Global Functions
@@ -238,7 +245,6 @@ window.deleteStudent = (email) => {
     if (!confirm('Are you sure you want to delete this student?')) return;
     currentData.students = (currentData.students || []).filter(s => s.email !== email);
     saveToCloud().then(() => {
-        alert('Student deleted successfully.');
         window.loadAdminStudents();
     });
 };
@@ -248,7 +254,9 @@ window.addNewStudent = () => {
     if (n && c && e && p) {
         if (!currentData.students) currentData.students = [];
         currentData.students.push({ name: n, class: c, email: e.toLowerCase(), phone: p, fee: { paid: 0, due: 1500 } });
-        saveToCloud().then(() => alert("Student Added!"));
+        saveToCloud().then(() => {
+            window.loadAdminStudents();
+        });
     }
 };
 
@@ -273,7 +281,6 @@ window.deleteTeacher = (identifier) => {
     if (!confirm('Are you sure you want to delete this teacher?')) return;
     currentData.teachers = (currentData.teachers || []).filter(t => t.username !== identifier && t.email !== identifier);
     saveToCloud().then(() => {
-        alert('Teacher deleted successfully.');
         window.loadAdminTeachers();
     });
 };
@@ -297,7 +304,6 @@ window.addNewTeacher = (e) => {
     if (!currentData.teachers) currentData.teachers = [];
     currentData.teachers.push({ name, email, phone, username, password, subject, role });
     saveToCloud().then(() => {
-        alert('Teacher added successfully.');
         document.getElementById('teacherForm').reset();
         window.loadAdminTeachers();
     });
@@ -366,8 +372,6 @@ window.saveAttendance = () => {
 
     if (!currentData.attendanceRecords) currentData.attendanceRecords = [];
     currentData.attendanceRecords.push({ date, class: cls, topic, data: statusData });
-    persistLocalMirror();
-    window.dispatchEvent(new Event('ccc-data-updated'));
 
     const btn = document.querySelector('#attendanceSection .btn-primary');
     let originalText = '';
@@ -379,12 +383,6 @@ window.saveAttendance = () => {
 
     saveToCloud()
         .then(() => {
-            alert("SUCCESS! Attendance for " + cls + "th (" + topic + ") has been saved.");
-            topicEl.value = "";
-            window.loadAdminAttendance();
-        })
-        .catch(() => {
-            alert("Attendance saved locally and will sync when connection is available.");
             topicEl.value = "";
             window.loadAdminAttendance();
         })
@@ -403,7 +401,7 @@ window.loadAdminTimetable = () => {
 
 window.saveTimetable = () => {
     document.querySelectorAll('.tt-in').forEach(i => currentData.timetable[i.dataset.class] = i.value);
-    saveToCloud().then(() => alert("Timetable Updated!"));
+    saveToCloud();
 };
 
 window.renderAdminNotes = () => {
@@ -432,15 +430,8 @@ window.renderAdminNotes = () => {
 window.deleteNote = (noteId) => {
     if (!confirm('Are you sure you want to delete this note?')) return;
     currentData.notes = (currentData.notes || []).filter(n => n.id !== noteId);
-    persistLocalMirror();
     saveToCloud().then(() => {
-        alert('Note deleted successfully.');
         window.renderAdminNotes();
-        window.dispatchEvent(new Event('ccc-data-updated'));
-    }).catch(() => {
-        alert('Note deleted locally. It will sync when the connection returns.');
-        window.renderAdminNotes();
-        window.dispatchEvent(new Event('ccc-data-updated'));
     });
 };
 
@@ -503,8 +494,7 @@ window.saveRanks = () => {
     });
 
     currentData.ranks[cls] = { testName: testName, list: r };
-    persistLocalMirror();
-    saveToCloud().then(() => alert("Rankings Saved!"));
+    saveToCloud();
 };
 
 let editEmail = "";
@@ -526,7 +516,6 @@ window.confirmFeeUpdate = () => {
         s.fee.due = document.getElementById('feeDueInput').value;
         saveToCloud().then(() => {
             document.getElementById('feeModal').style.display = 'none';
-            alert("Fee Updated!");
         });
     }
 };
@@ -694,18 +683,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!currentData.notes) currentData.notes = [];
                 const noteId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
                 currentData.notes.push({ id: noteId, title, class: cls, link, createdAt: new Date().toISOString() });
-                // Persist locally first so UI updates immediately
-                persistLocalMirror();
-                window.renderAdminNotes();
-                // Save to cloud and refresh UI on completion
                 saveToCloud().then(() => {
-                    alert("Note Material Added!");
                     e.target.reset();
                     window.renderAdminNotes();
-                    // Notify any listeners (students/admin views) to update
-                    window.dispatchEvent(new Event('ccc-data-updated'));
-                }).catch(() => {
-                    alert('Note saved locally but failed to sync to cloud.');
                 });
             });
             noteForm.hasListener = true;
