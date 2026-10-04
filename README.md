@@ -1,3 +1,6 @@
+**TEACHER PANEL**
+
+
 <img width="1366" height="768" alt="image" src="https://github.com/user-attachments/assets/67424897-8fef-48d2-8b92-a6e48f7ea10c" />
 
 <img width="1366" height="768" alt="image" src="https://github.com/user-attachments/assets/05ecb9d8-8cec-4173-ac8a-6461178d1c40" />
@@ -12,5 +15,5 @@
 
 <img width="1366" height="768" alt="image" src="https://github.com/user-attachments/assets/8351addd-252a-4602-86df-c7dc1dcecf9e" />
 
-STUDENT panel 
+**STUDENT PANEL**
 <img width="1366" height="768" alt="image" src="https://github.com/user-attachments/assets/09178946-3980-431f-8486-b19e9dcfe4ed" />
