@@ -4,137 +4,166 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>vishwasaraiya group of institutions | Student Dashboard</title>
+    <title>Vishwasaraiya Group of Institutions | Student Dashboard</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
 <body>
-    <div class="dashboard-container">
-        <!-- Header -->
+    <div class="dashboard-wrapper">
+        <!-- Compact Professional Header -->
         <header class="dashboard-header">
             <div class="logo-section">
-                <img src="coaching_center_logo_1775973304457.png" alt="CCC Logo">
-                <div>
+                <img src="coaching_center_logo_1775973304457.png" alt="Institute Logo">
+                <div class="brand-info">
                     <h1>vishwasaraiya group of institutions</h1>
-                    <p>Ishant Raj Sir's Institute of Excellence</p>
+                    <p><i class="fas fa-award"></i> Ishant Raj Sir's Institute of Excellence</p>
                 </div>
             </div>
             <div class="header-meta">
-                <span><i class="fas fa-calendar-alt"></i> Academic Session 2025-2026</span>
+                <span class="session-badge"><i class="fas fa-calendar-alt"></i> Academic Session 2025-2026</span>
             </div>
         </header>
 
-        <!-- Sidebar / About -->
-        <aside class="sidebar">
-            <div class="card profile-card">
-                <div class="card-title">
-                    <i class="fas fa-user-circle"></i> Profile Info
-                </div>
-                <div class="profile-img-container">
-                    <img id="studentProfileImg" src="student_profile_placeholder_1775973326014.png" alt="User Photo">
-                </div>
-                <h2 class="username" id="displayUsername">Himanshu Kumar</h2>
-                <p class="student-handle" id="displayHandle">Class 10th Student</p>
+        <!-- Main Dashboard 3-Column Responsive Layout -->
+        <div class="dashboard-container">
+            <!-- Left Column: Profile Info & Study Notes -->
+            <aside class="col-left">
+                <!-- Profile Card -->
+                <div class="card profile-card">
+                    <div class="card-title">
+                        <i class="fas fa-user-circle"></i> Profile Info
+                    </div>
+                    <div class="profile-img-container">
+                        <img id="studentProfileImg" src="student_profile_placeholder_1775973326014.png" alt="Student Photo">
+                    </div>
+                    <h2 class="username" id="displayUsername">Loading Student...</h2>
+                    <p class="student-handle" id="displayHandle">Class -- | student@domain.com</p>
 
-                <div class="profile-actions">
-                    <button class="btn btn-outline" id="changePhotoBtn"><i class="fas fa-camera"></i> Change
-                        Photo</button>
-                    <input type="file" id="photoInput" style="display: none;" accept="image/*">
-                    <button class="btn btn-danger" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</button>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-title">
-                    <i class="fas fa-book-open"></i> Study Notes
-                </div>
-                <div class="notes-list" id="studentNotesList">
-                    <!-- Dynamic Notes -->
-                    <div class="note-item">
-                        <span>General Instructions</span>
-                        <a href="#" class="download-link"><i class="fas fa-download"></i> Download</a>
+                    <div class="profile-actions">
+                        <button class="btn btn-outline" id="changePhotoBtn"><i class="fas fa-camera"></i> Change Photo</button>
+                        <input type="file" id="photoInput" style="display: none;" accept="image/*">
+                        <button class="btn btn-danger" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</button>
                     </div>
                 </div>
-            </div>
-        </aside>
 
-        <!-- Main Center -->
-        <main class="main-center">
-            <div class="card">
-                <div class="card-title">
-                    <i class="fas fa-clock"></i> Class Time Table
+                <!-- Study Notes Card -->
+                <div class="card notes-card">
+                    <div class="card-title">
+                        <i class="fas fa-book-open"></i> Study Notes & Materials
+                    </div>
+                    <div class="notes-list" id="studentNotesList">
+                        <div class="empty-state"><i class="fas fa-spinner fa-spin"></i> Loading materials...</div>
+                    </div>
                 </div>
-                <div class="timetable-container" id="studentTimetable">
-                    <!-- Dynamic Timetable -->
-                </div>
-            </div>
+            </aside>
 
-            <div class="card" style="margin-top: 24px;">
-                <div class="card-title">
-                    <i class="fas fa-trophy"></i> Test Rankings (<span id="rankClassLabel"></span>)
+            <!-- Center Column: Class Time Table & Test Rankings -->
+            <main class="col-center">
+                <!-- Timetable Card -->
+                <div class="card timetable-card">
+                    <div class="card-title">
+                        <i class="fas fa-clock"></i> Class Time Table
+                    </div>
+                    <div class="timetable-container" id="studentTimetable">
+                        <div class="empty-state"><i class="fas fa-spinner fa-spin"></i> Loading timetable...</div>
+                    </div>
                 </div>
-                <div class="rankings-grid" id="studentRankings">
-                    <!-- Dynamic Rankings -->
-                    <p style="color: var(--text-muted); padding: 20px;">No rankings available for your class yet.</p>
-                </div>
-            </div>
-        </main>
 
-        <!-- Main Right -->
-        <aside class="main-right">
-            <div class="card">
-                <div class="card-title">
-                    <i class="fas fa-calendar-check"></i> Your Attendance
+                <!-- Test Rankings Card -->
+                <div class="card rankings-card">
+                    <div class="card-title">
+                        <i class="fas fa-trophy"></i> Test Rankings (<span id="rankClassLabel">Class Test</span>)
+                    </div>
+                    <div class="rankings-grid" id="studentRankings">
+                        <div class="empty-state"><i class="fas fa-spinner fa-spin"></i> Loading rankings...</div>
+                    </div>
                 </div>
-                <div class="table-responsive">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Status</th>
-                                <th>Topic</th>
-                            </tr>
-                        </thead>
-                        <tbody id="studentAttendanceBody">
-                            <!-- Dynamic Attendance -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+            </main>
 
-            <div class="card" style="margin-top: 24px;">
-                <div class="card-title">
-                    <i class="fas fa-wallet"></i> Your Fee Status
+            <!-- Right Column: Attendance & Fee Status -->
+            <aside class="col-right">
+                <!-- Attendance Card -->
+                <div class="card attendance-card">
+                    <div class="card-title">
+                        <i class="fas fa-calendar-check"></i> Your Attendance
+                    </div>
+
+                    <!-- Attendance Summary Stats -->
+                    <div class="attendance-summary" id="attendanceSummary">
+                        <div class="att-stat-box">
+                            <span class="att-val" id="attTotalClasses">0</span>
+                            <span class="att-lbl">Total</span>
+                        </div>
+                        <div class="att-stat-box present">
+                            <span class="att-val" id="attPresentClasses">0</span>
+                            <span class="att-lbl">Present</span>
+                        </div>
+                        <div class="att-stat-box absent">
+                            <span class="att-val" id="attAbsentClasses">0</span>
+                            <span class="att-lbl">Absent</span>
+                        </div>
+                        <div class="att-stat-box percent">
+                            <span class="att-val" id="attPercentage">0%</span>
+                            <span class="att-lbl">Rate</span>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="att-progress-wrapper">
+                        <div class="att-progress-bar">
+                            <div class="att-progress-fill" id="attProgressFill" style="width: 0%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Attendance Table -->
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                    <th>Topic</th>
+                                </tr>
+                            </thead>
+                            <tbody id="studentAttendanceBody">
+                                <tr><td colspan="3" class="empty-state-cell"><i class="fas fa-spinner fa-spin"></i> Loading attendance...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-                <div class="table-responsive">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Detail</th>
-                                <th>Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody id="studentFeeBody">
-                            <!-- Dynamic Fee -->
-                            <tr>
-                                <td>Monthly Fee</td>
-                                <td style="color: var(--accent); font-weight: 600;">₹0</td>
-                            </tr>
-                            <tr>
-                                <td>Due Amount</td>
-                                <td style="color: var(--danger); font-weight: 700;">₹0</td>
-                            </tr>
-                        </tbody>
-                    </table>
+
+                <!-- Fee Status Card -->
+                <div class="card fee-card">
+                    <div class="card-title">
+                        <i class="fas fa-wallet"></i> Your Fee Status
+                    </div>
+
+                    <div class="fee-badge-container">
+                        <span class="fee-status-pill status-paid" id="feeStatusPill">Checking Status...</span>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Particulars</th>
+                                    <th style="text-align: right;">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody id="studentFeeBody">
+                                <tr><td colspan="2" class="empty-state-cell"><i class="fas fa-spinner fa-spin"></i> Loading fee status...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
-        </aside>
+            </aside>
+        </div>
     </div>
 
     <script type="module" src="script.js"></script>

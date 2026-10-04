@@ -654,53 +654,185 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleStudentDashboard() {
-        const uClass = localStorage.getItem('userClass');
-        const uEmail = localStorage.getItem('userEmail');
-        document.getElementById('displayUsername').textContent = localStorage.getItem('userName');
-        document.getElementById('displayHandle').textContent = `Class ${uClass}th | ${uEmail}`;
+        const uEmail = (localStorage.getItem('userEmail') || '').toLowerCase().trim();
+        const student = (currentData.students || []).find(x => String(x.email || '').toLowerCase().trim() === uEmail);
 
+        const studentName = student ? student.name : (localStorage.getItem('userName') || 'Student');
+        const uClass = student ? String(student.class) : (localStorage.getItem('userClass') || '10');
+
+        const displayUsername = document.getElementById('displayUsername');
+        const displayHandle = document.getElementById('displayHandle');
+
+        if (displayUsername) displayUsername.textContent = studentName;
+        if (displayHandle) displayHandle.textContent = `Class ${uClass}th | ${uEmail || 'No Email'}`;
+
+        // 1. Timetable
         const timetable = currentData.timetable || {};
-        if (document.getElementById('studentTimetable'))
-            document.getElementById('studentTimetable').innerHTML = `<div class="time-card grade-${uClass}"><div class="class-title">Class ${uClass}th</div><div class="class-time">${timetable[uClass] || 'TBA'}</div></div>`;
-
-        const attBody = document.getElementById('studentAttendanceBody');
-        if (attBody) {
-            attBody.innerHTML = "";
-            (currentData.attendanceRecords || []).forEach(record => {
-                const uEmailLower = uEmail.toLowerCase();
-                const status = record.data ? (record.data[uEmail] || record.data[uEmailLower]) : null;
-
-                if (status) {
-                    attBody.innerHTML += `<tr><td>${record.date}</td><td><span class="status-pill ${status === 'P' ? 'present' : 'absent'}">${status}</span></td><td>${record.topic}</td></tr>`;
-                }
-            });
+        const ttContainer = document.getElementById('studentTimetable');
+        if (ttContainer) {
+            const classSchedule = timetable[uClass] || 'TBA';
+            ttContainer.innerHTML = `
+                <div class="time-card grade-${uClass}">
+                    <div class="time-card-header">
+                        <span class="class-title"><i class="fas fa-graduation-cap"></i> Class ${uClass}th Regular Batch</span>
+                        <span class="grade-pill">Grade ${uClass}th</span>
+                    </div>
+                    <div class="class-time"><i class="fas fa-clock" style="color: var(--primary);"></i> ${classSchedule}</div>
+                    <div class="time-card-footer"><i class="fas fa-chalkboard-teacher"></i> Instructor: Ishant Raj Sir</div>
+                </div>
+            `;
         }
 
-        const s = (currentData.students || []).find(x => x.email.toLowerCase() === uEmail);
-        if (document.getElementById('studentFeeBody') && s)
-            document.getElementById('studentFeeBody').innerHTML = `<tr><td>Paid</td><td>₹${s.fee.paid}</td></tr><tr><td>Due</td><td style="color:red">₹${s.fee.due}</td></tr>`;
+        // 2. Attendance Stats & History
+        const attBody = document.getElementById('studentAttendanceBody');
+        let totalClasses = 0;
+        let presentCount = 0;
+        let absentCount = 0;
+        let attRowsHTML = '';
+
+        (currentData.attendanceRecords || []).forEach(record => {
+            const uEmailLower = uEmail.toLowerCase();
+            const statusData = record.data || {};
+            const status = statusData[uEmail] || statusData[uEmailLower];
+
+            if (status) {
+                totalClasses++;
+                if (status === 'P') presentCount++;
+                else if (status === 'A') absentCount++;
+
+                attRowsHTML += `
+                    <tr>
+                        <td><i class="far fa-calendar-alt" style="color: var(--text-muted); margin-right: 4px;"></i> ${record.date || 'N/A'}</td>
+                        <td><span class="status-pill ${status === 'P' ? 'present' : 'absent'}">${status === 'P' ? '<i class="fas fa-check"></i> Present' : '<i class="fas fa-times"></i> Absent'}</span></td>
+                        <td>${record.topic || 'General Session'}</td>
+                    </tr>
+                `;
+            }
+        });
+
+        const rate = totalClasses > 0 ? Math.round((presentCount / totalClasses) * 100) : 0;
+
+        const attTotEl = document.getElementById('attTotalClasses');
+        const attPresEl = document.getElementById('attPresentClasses');
+        const attAbsEl = document.getElementById('attAbsentClasses');
+        const attPercEl = document.getElementById('attPercentage');
+        const attFillEl = document.getElementById('attProgressFill');
+
+        if (attTotEl) attTotEl.textContent = totalClasses;
+        if (attPresEl) attPresEl.textContent = presentCount;
+        if (attAbsEl) attAbsEl.textContent = absentCount;
+        if (attPercEl) attPercEl.textContent = `${rate}%`;
+        if (attFillEl) attFillEl.style.width = `${rate}%`;
+
+        if (attBody) {
+            attBody.innerHTML = attRowsHTML || `<tr><td colspan="3" class="empty-state-cell"><i class="fas fa-calendar-minus"></i> No attendance records marked yet.</td></tr>`;
+        }
+
+        // 3. Fee Status
+        const feeBody = document.getElementById('studentFeeBody');
+        const feePill = document.getElementById('feeStatusPill');
+
+        if (feeBody) {
+            const paid = parseFloat(student?.fee?.paid || 0);
+            const due = parseFloat(student?.fee?.due || 0);
+            const total = paid + due;
+
+            let statusText = 'Fully Paid';
+            let statusClass = 'status-paid';
+
+            if (due > 0 && paid > 0) {
+                statusText = 'Partially Paid';
+                statusClass = 'status-partial';
+            } else if (due > 0 && paid === 0) {
+                statusText = 'Payment Due';
+                statusClass = 'status-due';
+            } else if (total === 0) {
+                statusText = 'No Fee Recorded';
+                statusClass = 'status-paid';
+            }
+
+            if (feePill) {
+                feePill.textContent = statusText;
+                feePill.className = `fee-status-pill ${statusClass}`;
+            }
+
+            feeBody.innerHTML = `
+                <tr>
+                    <td>Total Course Fee</td>
+                    <td style="text-align: right; font-weight: 600;">₹${total.toLocaleString()}</td>
+                </tr>
+                <tr>
+                    <td>Paid Amount</td>
+                    <td style="text-align: right; color: var(--accent); font-weight: 700;">₹${paid.toLocaleString()}</td>
+                </tr>
+                <tr>
+                    <td>Balance Due</td>
+                    <td style="text-align: right; color: ${due > 0 ? 'var(--danger)' : 'var(--text-muted)'}; font-weight: 700;">₹${due.toLocaleString()}</td>
+                </tr>
+            `;
+        }
 
         syncStudentPhotoInUI();
 
+        // 4. Notes List
         const nList = document.getElementById('studentNotesList');
         if (nList) {
             nList.innerHTML = "";
-            (currentData.notes || []).filter(n => String(n.class) === String(uClass)).forEach(n => {
-                nList.innerHTML += `<div class="note-item"><span>${n.title}</span><a href="${n.link}" target="_blank" class="download-link"><i class="fas fa-external-link-alt"></i> View/Open</a></div>`;
-            });
+            const filteredNotes = (currentData.notes || []).filter(n => String(n.class) === String(uClass));
+            if (filteredNotes.length === 0) {
+                nList.innerHTML = `<div class="empty-state"><i class="fas fa-folder-open"></i> No notes uploaded for Class ${uClass}th yet.</div>`;
+            } else {
+                filteredNotes.forEach(n => {
+                    const cleanTitle = (n.title || 'Study Material').replace(/'/g, "\\'");
+                    nList.innerHTML += `
+                        <div class="note-item">
+                            <div class="note-title-info">
+                                <i class="fas fa-file-pdf note-icon"></i>
+                                <div>
+                                    <div class="note-name">${n.title || 'Study Material'}</div>
+                                    <div class="note-meta">Class ${n.class}th</div>
+                                </div>
+                            </div>
+                            <div class="note-actions">
+                                <a href="${n.link || '#'}" target="_blank" class="download-link" title="Open Document"><i class="fas fa-external-link-alt"></i> Open</a>
+                                <button onclick="window.downloadNoteFile('${cleanTitle}')" class="btn btn-outline btn-xs" title="Download Document"><i class="fas fa-download"></i></button>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
         }
 
+        // 5. Test Rankings
         const rnk = document.getElementById('studentRankings');
-        if (rnk && currentData.ranks && currentData.ranks[uClass]) {
-            const data = currentData.ranks[uClass];
-            const testName = data.testName || "Class Test";
-            const list = data.list || [];
-            if (document.getElementById('rankClassLabel')) document.getElementById('rankClassLabel').textContent = testName;
+        if (rnk) {
+            const ranksForClass = (currentData.ranks && currentData.ranks[uClass]) ? currentData.ranks[uClass] : null;
+            const testName = ranksForClass?.testName || `Class ${uClass}th Monthly Test`;
+            const list = ranksForClass?.list || [];
+
+            if (document.getElementById('rankClassLabel')) {
+                document.getElementById('rankClassLabel').textContent = testName;
+            }
 
             if (list.length > 0) {
-                rnk.innerHTML = `<div class="ranking-card">${list.map((r, i) => `<div class="rank-item"><div class="rank-num">${i + 1}</div><div class="rank-details"><div class="rank-name">${r.name}</div><div class="rank-points">${r.score} marks</div></div></div>`).join('')}</div>`;
+                rnk.innerHTML = list.map((r, i) => {
+                    const isLoggedUser = studentName && String(r.name || '').trim().toLowerCase() === studentName.trim().toLowerCase();
+                    const scoreText = r.score !== null && r.score !== undefined ? `${r.score} Marks` : 'Awaiting Marks';
+                    return `
+                        <div class="rank-item ${isLoggedUser ? 'logged-student-rank' : ''}">
+                            <div class="rank-num">${i + 1}</div>
+                            <div class="rank-details">
+                                <div class="rank-name">
+                                    ${r.name}
+                                    ${isLoggedUser ? '<span class="you-badge">YOU</span>' : ''}
+                                </div>
+                                <div class="rank-points">${scoreText}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
             } else {
-                rnk.innerHTML = `<p style="color: var(--text-muted); padding: 20px;">No rankings available for ${testName} yet.</p>`;
+                rnk.innerHTML = `<div class="empty-state"><i class="fas fa-medal"></i> No test rankings uploaded for Class ${uClass}th yet.</div>`;
             }
         }
     }
