@@ -27,8 +27,18 @@ const DEFAULT_TEACHER = {
     role: "Admin"
 };
 
+const DEFAULT_STUDENTS = [
+    {
+        name: "Anup Kumar",
+        email: "anupkp631@gmail.com",
+        phone: "8318523214",
+        class: "10",
+        fee: { paid: 0, due: 0 }
+    }
+];
+
 let currentData = {
-    students: [],
+    students: DEFAULT_STUDENTS,
     teachers: [DEFAULT_TEACHER],
     timetable: { "8": "TBA", "9": "TBA", "10": "TBA", "11": "TBA", "12": "TBA" },
     notes: [],
@@ -225,7 +235,13 @@ window.addNewStudent = () => {
     if (n && c && e && p) {
         const cleanedClass = c.replace(/\D/g, '') || "10";
         if (!currentData.students) currentData.students = [];
-        currentData.students.push({ name: n, class: cleanedClass, email: e.toLowerCase(), phone: p, fee: { paid: 0, due: 0 } });
+        currentData.students.push({ 
+            name: n.trim(), 
+            class: cleanedClass, 
+            email: e.trim().toLowerCase(), 
+            phone: p.trim(), 
+            fee: { paid: 0, due: 0 } 
+        });
         saveToCloud().then(() => {
             window.loadAdminStudents();
         });
@@ -553,7 +569,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Helper to ensure structure defaults
     const ensureStructures = () => {
         if (!currentData) currentData = {};
-        if (!currentData.students) currentData.students = [];
+        if (!currentData.students || !Array.isArray(currentData.students)) currentData.students = [];
+        if (currentData.students.length === 0) currentData.students = [...DEFAULT_STUDENTS];
         if (!currentData.teachers || !Array.isArray(currentData.teachers)) currentData.teachers = [];
         if (currentData.teachers.length === 0) currentData.teachers.push(DEFAULT_TEACHER);
         if (!currentData.timetable) currentData.timetable = { "8": "TBA", "9": "TBA", "10": "TBA", "11": "TBA", "12": "TBA" };
@@ -593,14 +610,29 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function handleLoginPage() {
-        document.getElementById('loginForm')?.addEventListener('submit', (e) => {
+        const form = document.getElementById('loginForm');
+        if (!form) return;
+
+        form.addEventListener('submit', (e) => {
             e.preventDefault();
             const email = document.getElementById('email').value.trim().toLowerCase();
             const pass = document.getElementById('password').value.trim();
-            const user = (currentData.students || []).find(s => {
+            const cleanPass = pass.replace(/\D/g, '');
+
+            const studentsList = (currentData && Array.isArray(currentData.students) && currentData.students.length > 0)
+                ? currentData.students
+                : DEFAULT_STUDENTS;
+
+            const user = studentsList.find(s => {
                 const storedEmail = String(s.email || '').trim().toLowerCase();
                 const storedPhone = String(s.phone || '').trim();
-                return storedEmail === email && storedPhone === pass;
+                const cleanStoredPhone = storedPhone.replace(/\D/g, '');
+
+                const emailMatches = storedEmail === email;
+                const phoneMatches = (storedPhone === pass) ||
+                                     (cleanPass.length > 0 && cleanStoredPhone === cleanPass) ||
+                                     (cleanPass.length >= 10 && cleanStoredPhone.endsWith(cleanPass.slice(-10)));
+                return emailMatches && phoneMatches;
             });
 
             if (user) {
@@ -611,7 +643,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('isAdmin', 'false');
                 window.location.href = 'index.html';
             } else {
-                alert("Invalid Login!");
+                const emailExists = studentsList.some(s => String(s.email || '').trim().toLowerCase() === email);
+                if (!emailExists) {
+                    alert("The student email '" + email + "' is not registered yet.\n\nPlease ask your Teacher to add your student profile in the Admin Panel.");
+                } else {
+                    alert("Incorrect Password / Phone Number!\n\nPlease enter the correct 10-digit phone number registered for this email.");
+                }
             }
         });
     }
