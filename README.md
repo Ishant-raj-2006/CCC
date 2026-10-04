@@ -11,3 +11,6 @@
 <img width="1366" height="768" alt="image" src="https://github.com/user-attachments/assets/a2f91926-e465-4364-b6da-83cfb10eabd7" />
 
 <img width="1366" height="768" alt="image" src="https://github.com/user-attachments/assets/8351addd-252a-4602-86df-c7dc1dcecf9e" />
+
+STUDENT panel 
+<img width="1366" height="768" alt="image" src="https://github.com/user-attachments/assets/09178946-3980-431f-8486-b19e9dcfe4ed" />
